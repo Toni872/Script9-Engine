@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens ───────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Colores de fondo */
+    --bg-primary: #020617;      /* Slate 955 */
+    --bg-card: #0F172A;         /* Slate 900 */
+    --bg-elevated: #1E293B;     /* Slate 800 */
+
+    /* Acentos */
+    --accent-emerald: #10B981;
+    --accent-blue: #003D82;     /* Deep Tech Blue */
+
+    /* Texto */
+    --text-primary: #F8FAFC;    /* Slate 50 */
+    --text-muted: #94A3B8;      /* Slate 400 */
+    --text-subtle: #64748B;     /* Slate 500 */
+
+    /* Glassmorphism */
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-blur: 12px;
+
+    /* Shadows */
+    --shadow-glow: 0 0 15px rgba(16, 185, 129, 0.5);
+    --shadow-card: 0 4px 6px -1px rgba(0, 61, 130, 0.1), 0 2px 4px -1px rgba(0, 61, 130, 0.06);
+
+    /* Tipografía */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-slate-800/80;
+  }
+  body {
+    @apply bg-slate-950 text-slate-50 min-h-screen antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+/* ── Glassmorphism ────────────────────────────────────────── */
+@layer components {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl p-8 transition-all duration-300;
+    @apply hover:border-emerald-500/30 hover:bg-slate-900/60;
+  }
+
+  /* Técnica Grid Pattern */
+  .tech-grid {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 4rem 4rem;
+  }
+
+  /* Glow / Aura */
+  .aura-glow {
+    background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+    filter: blur(120px);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #10B981, #059669);
+  }
+
+  /* Botón Primary con glow */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-8 py-4;
+    @apply bg-emerald-500 text-slate-950 font-bold rounded-lg;
+    @apply transition-all duration-300;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.39);
+  }
+
+  .btn-primary:hover {
+    @apply bg-emerald-400;
+    box-shadow: 0 4px 24px rgba(16, 185, 129, 0.23);
+  }
+
+  .btn-primary:hover .btn-arrow {
+    @apply translate-x-1;
+  }
+
+  /* Botón Secundario Outline */
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-8 py-4;
+    @apply border border-blue-700 text-blue-400 rounded-lg font-medium;
+    @apply transition-all duration-200;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-blue-950/50;
+  }
+
+  /* Logo SVG inline */
+  .logo-script9 {
+    @apply inline-flex items-center text-[32px] font-extrabold leading-none;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -1.5px;
+  }
+
+  .logo-script9 .script {
+    @apply text-white;
+  }
+
+  .logo-script9 .nine {
+    @apply text-emerald-500;
+  }
+
+  .logo-script9-dark .script {
+    @apply text-slate-900;
+  }
+
+  .logo-script9-dark .nine {
+    @apply text-emerald-500;
+  }
+}
+
+/* ── Scrollbar Personalizada ──────────────────────────────── */
+@layer utilities {
+  .scrollbar-emerald {
+    scrollbar-width: thin;
+    scrollbar-color: #10B981 transparent;
+  }
+
+  .scrollbar-emerald::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-emerald::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-emerald::-webkit-scrollbar-thumb {
+    background-color: #10B981;
+    border-radius: 9999px;
+  }
+
+  .scrollbar-emerald::-webkit-scrollbar-thumb:hover {
+    background-color: #059669;
+  }
+}
