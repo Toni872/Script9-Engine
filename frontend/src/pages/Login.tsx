@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
+import { GoogleLogo } from '@phosphor-icons/react';
 
 export function Login() {
   const { user, isLoading, loginWithGoogle } = useAuth();
@@ -33,9 +35,14 @@ export function Login() {
         <p className="text-center text-sm text-slate-400">
           Automatización Inteligente B2B
         </p>
-        <button onClick={loginWithGoogle} className="btn-primary">
+        <Button
+          variant="primary"
+          size="lg"
+          leftIcon={<GoogleLogo size={20} weight="bold" />}
+          onClick={loginWithGoogle}
+        >
           Continuar con Google
-        </button>
+        </Button>
       </div>
     </div>
   );
