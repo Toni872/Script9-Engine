@@ -17,8 +17,8 @@ export const UsuarioSchema = z.object({
   plan_suscripcion: PlanSuscripcionSchema.default('trial'),
   stripe_customer_id: z.string().nullable().optional(),
   activo: z.boolean().default(true),
-  creado_en: z.string().datetime({ offset: true }),
-  actualizado_en: z.string().datetime({ offset: true }),
+  creado_en: z.string(),
+  actualizado_en: z.string(),
 });
 export type Usuario = z.infer<typeof UsuarioSchema>;
 
