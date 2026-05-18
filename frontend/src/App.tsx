@@ -3,6 +3,8 @@ import { ProtectedRoute } from '@/components/ui/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import { Settings } from '@/pages/Settings';
+import { Profile } from '@/pages/Profile';
 import { NotFound } from '@/pages/NotFound';
 
 function App() {
@@ -21,8 +23,8 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<div className="p-8 text-slate-400">Settings — próximamente</div>} />
-          <Route path="/profile" element={<div className="p-8 text-slate-400">Profile — próximamente</div>} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         {/* Redirects */}

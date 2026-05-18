@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
+import { Cube3D } from '@/components/ui/Cube3D';
 import { GoogleLogo } from '@phosphor-icons/react';
 
 export function Login() {
@@ -35,6 +36,7 @@ export function Login() {
         <p className="text-center text-sm text-slate-400">
           Automatización Inteligente B2B
         </p>
+        <Cube3D />
         <Button
           variant="primary"
           size="lg"
