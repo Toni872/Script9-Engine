@@ -1,0 +1,14 @@
+"""Endpoint de health check para Script9 Engine."""
+
+from fastapi import APIRouter
+
+from app.config import settings
+from app.schemas.health import HealthResponse
+
+router = APIRouter(tags=["health"])
+
+
+@router.get("/health", response_model=HealthResponse)
+async def health_check() -> HealthResponse:
+    """Verifica que la API esté operativa."""
+    return HealthResponse(status="ok", environment=settings.environment)

@@ -1,0 +1,13 @@
+"""Agrupación de todos los routers de la API v1."""
+
+from fastapi import APIRouter
+
+from app.api.v1 import health, usuarios, webhooks
+
+router = APIRouter(prefix="/api/v1")
+router.include_router(health.router)
+router.include_router(usuarios.router)
+
+# Webhooks sin prefijo /api/v1 para compatibilidad con Stripe
+webhook_router = APIRouter()
+webhook_router.include_router(webhooks.router)

@@ -1,0 +1,33 @@
+"""Endpoints de gestión de perfil para el usuario autenticado."""
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.auth import get_current_user
+from app.database import get_db
+from app.models import Usuario
+from app.schemas.usuario import UsuarioRead, UsuarioUpdate
+
+router = APIRouter(prefix="/usuarios", tags=["usuarios"])
+
+
+@router.get("/me", response_model=UsuarioRead)
+async def get_me(usuario: Usuario = Depends(get_current_user)) -> Usuario:
+    """Devuelve el perfil del usuario autenticado."""
+    return usuario
+
+
+@router.patch("/me", response_model=UsuarioRead)
+async def update_me(
+    data: UsuarioUpdate,
+    usuario: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Usuario:
+    """Actualiza el perfil del usuario autenticado."""
+    if data.nombre is not None:
+        usuario.nombre = data.nombre
+    if data.email is not None:
+        usuario.email = data.email
+    await db.commit()
+    await db.refresh(usuario)
+    return usuario
