@@ -5,7 +5,29 @@ import { useUsuario } from '@/hooks/useUsuario';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { getErrorMessage } from '@/lib/errors';
-import { Check } from '@phosphor-icons/react';
+import { Check, CreditCard } from '@phosphor-icons/react';
+
+const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
+  active: { label: 'Activo', className: 'text-emerald-400', dot: 'bg-emerald-500' },
+  past_due: { label: 'Vencido', className: 'text-amber-400', dot: 'bg-amber-500' },
+  canceled: { label: 'Cancelado', className: 'text-red-400', dot: 'bg-red-500' },
+  incomplete: { label: 'Incompleto', className: 'text-amber-400', dot: 'bg-amber-500' },
+  trialing: { label: 'Prueba', className: 'text-blue-400', dot: 'bg-blue-500' },
+  unpaid: { label: 'Impago', className: 'text-red-400', dot: 'bg-red-500' },
+};
+
+function StatusDot({ status }: { status: string | null }) {
+  const config = status ? statusConfig[status] : null;
+  if (!config) {
+    return <span className="text-sm text-slate-500">—</span>;
+  }
+  return (
+    <span className={`flex items-center gap-1.5 text-sm ${config.className}`}>
+      <span className={`h-2 w-2 rounded-full ${config.dot}`} />
+      {config.label}
+    </span>
+  );
+}
 
 export function Settings() {
   const { data: usuario } = useUsuario();
@@ -22,6 +44,13 @@ export function Settings() {
       queryClient.invalidateQueries({ queryKey: ['usuario', 'me'] });
       setSuccessMsg('Perfil actualizado correctamente');
       setTimeout(() => setSuccessMsg(null), 3000);
+    },
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: () => api.createPortal(),
+    onSuccess: (data) => {
+      window.location.href = data.url;
     },
   });
 
@@ -113,11 +142,36 @@ export function Settings() {
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-400">Estado</span>
-            <span className="flex items-center gap-1.5 text-sm text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Activo
-            </span>
+            <StatusDot status={usuario?.subscription_status ?? null} />
           </div>
+
+          {usuario?.current_period_end && usuario?.subscription_status === 'active' && (
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-400">Próximo pago</span>
+              <span className="text-sm text-slate-300">
+                {new Date(usuario.current_period_end).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            </div>
+          )}
+
+          {usuario?.stripe_customer_id && (
+            <div className="border-t border-slate-700/50 pt-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<CreditCard size={16} />}
+                isLoading={portalMutation.isPending}
+                disabled={portalMutation.isPending}
+                onClick={() => portalMutation.mutate()}
+              >
+                Gestionar suscripción
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
     </div>

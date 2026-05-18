@@ -14,6 +14,9 @@ class UsuarioRead(BaseModel):
     nombre: str
     plan_suscripcion: str
     stripe_customer_id: str | None = None
+    subscription_id: str | None = None
+    subscription_status: str | None = None
+    current_period_end: datetime | None = None
     activo: bool
     creado_en: datetime
     actualizado_en: datetime

@@ -9,13 +9,22 @@ import {
   GearSix,
   SignOut,
 } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const planColors: Record<string, string> = {
   trial: 'bg-slate-700 text-slate-300',
   starter: 'bg-blue-900/50 text-blue-300',
   professional: 'bg-emerald-900/50 text-emerald-300',
   enterprise: 'bg-amber-900/50 text-amber-300',
+};
+
+const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
+  active: { label: 'Activo', className: 'text-emerald-400', dot: 'bg-emerald-500' },
+  past_due: { label: 'Vencido', className: 'text-amber-400', dot: 'bg-amber-500' },
+  canceled: { label: 'Cancelado', className: 'text-red-400', dot: 'bg-red-500' },
+  incomplete: { label: 'Incompleto', className: 'text-amber-400', dot: 'bg-amber-500' },
+  trialing: { label: 'Prueba', className: 'text-blue-400', dot: 'bg-blue-500' },
+  unpaid: { label: 'Impago', className: 'text-red-400', dot: 'bg-red-500' },
 };
 
 export function Dashboard() {
@@ -102,13 +111,50 @@ export function Dashboard() {
               <EnvelopeSimple size={14} />
               {usuario?.email ?? user?.email}
             </p>
-            <span
-              className={`inline-block rounded-full px-3 py-0.5 text-xs font-medium capitalize ${
-                planColors[usuario?.plan_suscripcion ?? 'trial']
-              }`}
-            >
-              {usuario?.plan_suscripcion ?? 'trial'}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-block rounded-full px-3 py-0.5 text-xs font-medium capitalize ${
+                  planColors[usuario?.plan_suscripcion ?? 'trial']
+                }`}
+              >
+                {usuario?.plan_suscripcion ?? 'trial'}
+              </span>
+
+              {usuario?.subscription_status && (
+                <span
+                  className={`flex items-center gap-1 text-xs ${
+                    statusConfig[usuario.subscription_status]?.className ?? 'text-slate-400'
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      statusConfig[usuario.subscription_status]?.dot ?? 'bg-slate-500'
+                    }`}
+                  />
+                  {statusConfig[usuario.subscription_status]?.label ?? usuario.subscription_status}
+                </span>
+              )}
+
+              {usuario?.current_period_end && usuario?.subscription_status === 'active' && (
+                <span className="text-xs text-slate-500">
+                  · Vence{' '}
+                  {new Date(usuario.current_period_end).toLocaleDateString('es-AR', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
+
+              {(!usuario?.stripe_customer_id || usuario?.plan_suscripcion === 'trial') && (
+                <Link
+                  to="/pricing"
+                  className="text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
+                >
+                  Mejorar plan &rarr;
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </Card>

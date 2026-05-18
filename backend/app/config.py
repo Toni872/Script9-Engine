@@ -22,12 +22,32 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
 
+    # Stripe Price IDs
+    stripe_starter_price_id: str = ""
+    stripe_professional_price_id: str = ""
+    stripe_enterprise_price_id: str = ""
+
+    # Frontend
+    frontend_url: str = "http://localhost:5173"
+
     # Sentry
     sentry_dsn: str = ""
 
     @property
     def docs_enabled(self) -> bool:
         return self.environment == "local"
+
+    @property
+    def starter_price_id(self) -> str:
+        return self.stripe_starter_price_id
+
+    @property
+    def professional_price_id(self) -> str:
+        return self.stripe_professional_price_id
+
+    @property
+    def enterprise_price_id(self) -> str:
+        return self.stripe_enterprise_price_id
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

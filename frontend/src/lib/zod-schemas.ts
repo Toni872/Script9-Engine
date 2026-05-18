@@ -16,6 +16,8 @@ export const UsuarioSchema = z.object({
   nombre: z.string(),
   plan_suscripcion: PlanSuscripcionSchema.default('trial'),
   stripe_customer_id: z.string().nullable().optional(),
+  subscription_status: z.string().nullable().optional(),
+  current_period_end: z.string().nullable().optional(),
   activo: z.boolean().default(true),
   creado_en: z.string(),
   actualizado_en: z.string(),
@@ -43,3 +45,14 @@ export const HealthSchema = z.object({
   redis: z.string().optional(),
 });
 export type HealthResponse = z.infer<typeof HealthSchema>;
+
+// ── Stripe ────────────────────────────────────────────────────
+export const CheckoutResponseSchema = z.object({
+  url: z.string().url(),
+});
+export type CheckoutResponse = z.infer<typeof CheckoutResponseSchema>;
+
+export const PortalResponseSchema = z.object({
+  url: z.string().url(),
+});
+export type PortalResponse = z.infer<typeof PortalResponseSchema>;

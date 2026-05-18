@@ -5,6 +5,7 @@ import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
+import { Pricing } from '@/pages/Pricing';
 import { NotFound } from '@/pages/NotFound';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Route>
 
         {/* Redirects */}

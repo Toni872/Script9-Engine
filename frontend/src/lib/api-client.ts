@@ -115,6 +115,13 @@ export const api = {
   updateMe: (data: ActualizarPerfil) =>
     patch('/usuarios/me', data, UsuarioSchema),
 
+  // Stripe
+  createCheckout: (priceId: string) =>
+    post<{ url: string }>('/stripe/checkout', { price_id: priceId }),
+
+  createPortal: () =>
+    post<{ url: string }>('/stripe/portal'),
+
   // Genérico (para futuros endpoints)
   get,
   post,
