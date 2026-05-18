@@ -30,6 +30,7 @@ export function Navbar() {
         <Link to="/" className="logo-script9">
           <span className="script">Script</span>
           <span className="nine">9</span>
+          <span className="engine ml-1 text-xs font-normal text-slate-400">Engine</span>
         </Link>
 
         {user && (

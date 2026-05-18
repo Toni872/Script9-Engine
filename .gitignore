@@ -9,3 +9,6 @@ __pycache__
 coverage/
 .playwright/
 *.tsbuildinfo
+
+# Firebase credentials (secret!)
+firebase-credentials.json

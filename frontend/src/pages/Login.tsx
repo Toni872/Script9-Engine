@@ -29,9 +29,10 @@ export function Login() {
       <div className="aura-glow absolute -inset-40 top-1/3" />
 
       <div className="relative z-10 flex flex-col items-center gap-8">
-        <div className="logo-script9 text-5xl">
+        <div className="logo-script9 text-4xl sm:text-5xl">
           <span className="script">Script</span>
           <span className="nine">9</span>
+          <span className="engine ml-1 text-base sm:text-lg font-normal text-slate-400">Engine</span>
         </div>
         <p className="text-center text-sm text-slate-400">
           Automatización Inteligente B2B
