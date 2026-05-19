@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import Usuario
+from app.services.stripe_service import ensure_stripe
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -74,6 +75,7 @@ async def _handle_checkout_completed(session: dict, db: AsyncSession) -> None:
     usuario.stripe_customer_id = customer_id
 
     if subscription_id:
+        ensure_stripe()
         subscription = stripe.Subscription.retrieve(subscription_id)
         if subscription.get("items") and subscription["items"].get("data"):
             price_id = subscription["items"]["data"][0]["price"]["id"]

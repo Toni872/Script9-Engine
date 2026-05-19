@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import { useUsuario } from '@/hooks/useUsuario';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Check, ArrowRight, Star } from '@phosphor-icons/react';
 

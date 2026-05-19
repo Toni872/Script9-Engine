@@ -1,9 +1,15 @@
 name: script9-engine
 
+networks:
+  script9-net:
+    driver: bridge
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    networks:
+      - script9-net
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-script9}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-script9secret}
@@ -21,6 +27,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    networks:
+      - script9-net
     ports:
       - '6379:6379'
     healthcheck:
@@ -34,6 +42,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - script9-net
     ports:
       - '8081:8081'
     depends_on:
@@ -42,8 +52,33 @@ services:
       redis:
         condition: service_healthy
     environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      DEBUG: ${DEBUG:-true}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-script9}:${POSTGRES_PASSWORD:-script9secret}@db:5432/${POSTGRES_DB:-script9_db}
       REDIS_URL: redis://redis:6379/0
+      FIREBASE_CREDENTIALS_PATH: /app/firebase-credentials.json
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_STARTER_PRICE_ID: ${STRIPE_STARTER_PRICE_ID:-}
+      STRIPE_PROFESSIONAL_PRICE_ID: ${STRIPE_PROFESSIONAL_PRICE_ID:-}
+      STRIPE_ENTERPRISE_PRICE_ID: ${STRIPE_ENTERPRISE_PRICE_ID:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      # Firebase credentials (no incluido en la imagen por seguridad)
+      - ./backend/firebase-credentials.json:/app/firebase-credentials.json:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - script9-net
+    ports:
+      - '80:80'
+    depends_on:
+      - api
 
 volumes:
   postgres_data:

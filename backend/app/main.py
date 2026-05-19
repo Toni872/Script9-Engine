@@ -36,7 +36,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
+        "http://localhost:5173",  # Vite dev server
+        "http://localhost",        # Docker nginx
+        "http://localhost:80",     # Docker nginx (explicit)
         "https://script9-engine.web.app",
         "https://script9-engine.firebaseapp.com",
     ],
