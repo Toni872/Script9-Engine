@@ -2829,6 +2829,24 @@ files = [
 ]
 
 [[package]]
+name = "script9-billing"
+version = "0.1.0"
+description = "Módulo compartido de facturación Stripe para el ecosistema Script9"
+optional = false
+python-versions = "^3.12"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+pydantic = "^2.9"
+stripe = "^11.4"
+
+[package.source]
+type = "directory"
+url = "packages/script9-billing"
+
+[[package]]
 name = "sentry-sdk"
 version = "2.60.0"
 description = "Python client for Sentry (https://sentry.io)"
@@ -3552,4 +3570,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e88a07591d14671bc62116cfbafd5be2ee72dd9dc38c431b954ac9937a1276f5"
+content-hash = "4e253508a9e3631f45befdc470f6c11cbcfe744dfa14dba9c31e178b1cc2bbc2"

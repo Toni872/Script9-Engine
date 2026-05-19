@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: script9-billing
+Version: 0.1.0
+Summary: Módulo compartido de facturación Stripe para el ecosistema Script9
+Requires-Python: >=3.12
+Requires-Dist: stripe>=11.4
+Requires-Dist: pydantic>=2.9

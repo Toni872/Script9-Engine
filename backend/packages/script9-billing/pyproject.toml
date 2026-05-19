@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "script9-billing"
+version = "0.1.0"
+description = "Módulo compartido de facturación Stripe para el ecosistema Script9"
+requires-python = ">=3.12"
+dependencies = [
+    "stripe>=11.4",
+    "pydantic>=2.9",
+]
+
+[tool.setuptools.packages.find]
+include = ["script9_billing*"]

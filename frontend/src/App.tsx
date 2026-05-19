@@ -6,14 +6,16 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
 import { Pricing } from '@/pages/Pricing';
+import { SuccessPayment } from '@/pages/SuccessPayment';
 import { NotFound } from '@/pages/NotFound';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta pública */}
+        {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
+        <Route path="/pago-exitoso" element={<SuccessPayment />} />
 
         {/* Rutas protegidas con layout */}
         <Route

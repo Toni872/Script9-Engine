@@ -1,4 +1,7 @@
-"""Endpoints para integración con Stripe."""
+"""Endpoints para integración con Stripe.
+
+Usa script9-billing como engine de facturación compartido.
+"""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,59 +10,65 @@ from app.api.v1.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Usuario
-from app.schemas.stripe import CheckoutRequest, CheckoutResponse, PortalResponse
-from app.services.stripe_service import (
-    create_checkout_session,
-    create_customer_portal_session,
-    get_or_create_stripe_customer,
-)
+from app.schemas.stripe import CheckoutRequest, CheckoutResult, PortalResult
+from script9_billing.core import configure, create_checkout_session, create_portal_session
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
 
-@router.post("/checkout", response_model=CheckoutResponse)
+@router.post("/checkout", response_model=CheckoutResult)
 async def checkout(
     req: CheckoutRequest,
     usuario: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Crea una Checkout Session de Stripe usando lookup_key (no price_id)."""
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Stripe no configurado")
+
+    configure(settings.stripe_secret_key)
+
+    success_url = f"{settings.script9_url}/pago-exitoso?app=script9"
+    cancel_url = f"{settings.script9_url}/dashboard"
+
+    try:
+        url = create_checkout_session(
+            lookup_key=req.lookup_key,
+            user_uid=usuario.firebase_uid,
+            user_email=usuario.email,
+            app_name="script9",
+            stripe_customer_id=usuario.stripe_customer_id,
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+
+        return CheckoutResult(url=url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}")
+
+
+@router.post("/portal", response_model=PortalResult)
+async def portal(
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Crea una sesión del Customer Portal de Stripe."""
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Stripe no configurado")
 
     if not usuario.stripe_customer_id:
-        customer_id = await get_or_create_stripe_customer(
-            email=usuario.email,
-            nombre=usuario.nombre,
-            firebase_uid=usuario.firebase_uid,
-        )
-        usuario.stripe_customer_id = customer_id
-        await db.commit()
-    else:
-        customer_id = usuario.stripe_customer_id
-
-    success_url = f"{settings.frontend_url}/dashboard?checkout=success"
-    cancel_url = f"{settings.frontend_url}/pricing?checkout=canceled"
-
-    url = await create_checkout_session(
-        customer_id=customer_id,
-        price_id=req.price_id,
-        success_url=success_url,
-        cancel_url=cancel_url,
-    )
-    return CheckoutResponse(url=url)
-
-
-@router.post("/portal", response_model=PortalResponse)
-async def portal(
-    usuario: Usuario = Depends(get_current_user),
-):
-    if not usuario.stripe_customer_id:
         raise HTTPException(status_code=400, detail="Sin suscripción activa")
 
-    return_url = f"{settings.frontend_url}/settings"
+    configure(settings.stripe_secret_key)
 
-    url = await create_customer_portal_session(
-        customer_id=usuario.stripe_customer_id,
-        return_url=return_url,
-    )
-    return PortalResponse(url=url)
+    return_url = f"{settings.script9_url}/dashboard"
+
+    try:
+        url = create_portal_session(
+            customer_id=usuario.stripe_customer_id,
+            return_url=return_url,
+        )
+        return PortalResult(url=url)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}")

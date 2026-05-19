@@ -1,0 +1,2 @@
+stripe>=11.4
+pydantic>=2.9

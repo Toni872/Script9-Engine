@@ -116,8 +116,8 @@ export const api = {
     patch('/usuarios/me', data, UsuarioSchema),
 
   // Stripe
-  createCheckout: (priceId: string) =>
-    post<{ url: string }>('/stripe/checkout', { price_id: priceId }),
+  createCheckout: (lookupKey: string) =>
+    post<{ url: string }>('/stripe/checkout', { lookup_key: lookupKey }),
 
   createPortal: () =>
     post<{ url: string }>('/stripe/portal'),

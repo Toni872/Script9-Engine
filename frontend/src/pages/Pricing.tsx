@@ -10,6 +10,7 @@ const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
+    lookupKey: 'starter_monthly',
     price: 29,
     features: [
       '5 automatizaciones activas',
@@ -17,11 +18,11 @@ const PLANS = [
       'Soporte por email',
       'Panel de control básico',
     ],
-    priceId: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID ?? '',
   },
   {
     id: 'professional',
     name: 'Professional',
+    lookupKey: 'pro_monthly',
     price: 99,
     features: [
       '25 automatizaciones activas',
@@ -31,12 +32,12 @@ const PLANS = [
       'Integraciones premium',
       'Historial 90 días',
     ],
-    priceId: import.meta.env.VITE_STRIPE_PROFESSIONAL_PRICE_ID ?? '',
     popular: true,
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
+    lookupKey: 'enterprise_monthly',
     price: null,
     features: [
       'Automatizaciones ilimitadas',
@@ -46,7 +47,6 @@ const PLANS = [
       'SLA garantizado',
       'Auditoría y compliance',
     ],
-    priceId: import.meta.env.VITE_STRIPE_ENTERPRISE_PRICE_ID ?? '',
   },
 ];
 
@@ -56,7 +56,7 @@ export function Pricing() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const checkoutMutation = useMutation({
-    mutationFn: (priceId: string) => api.createCheckout(priceId),
+    mutationFn: (lookupKey: string) => api.createCheckout(lookupKey),
     onSuccess: (data) => {
       window.location.href = data.url;
     },
@@ -91,7 +91,7 @@ export function Pricing() {
           const isCurrentPlan = usuario?.plan_suscripcion === plan.id;
           const isLoading =
             checkoutMutation.isPending &&
-            checkoutMutation.variables === plan.priceId;
+            checkoutMutation.variables === plan.lookupKey;
 
           return (
             <div
@@ -169,7 +169,7 @@ export function Pricing() {
                     rightIcon={<ArrowRight size={16} weight="bold" />}
                     onClick={() => {
                       setErrorMsg(null);
-                      checkoutMutation.mutate(plan.priceId);
+                      checkoutMutation.mutate(plan.lookupKey);
                     }}
                   >
                     {isTrial ? 'Actualizar ahora' : 'Comenzar'}

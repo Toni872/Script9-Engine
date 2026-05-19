@@ -1,7 +1,10 @@
-"""Webhook handlers para integración externa (Stripe)."""
+"""Webhook handlers para integración externa (Stripe).
+
+Usa script9-billing como procesador compartido de webhooks.
+"""
+
 from datetime import datetime, timezone
 
-import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,17 +12,115 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import Usuario
-from app.services.stripe_service import ensure_stripe
+from script9_billing.core import configure
+from script9_billing.models import WebhookEvent
+from script9_billing.webhook import process_webhook
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
+class Script9Callbacks:
+    """Callbacks de Script9 Engine para eventos de Stripe."""
+
+    def __init__(self) -> None:
+        self._db: AsyncSession | None = None
+
+    def _lookup_key_to_plan(self, lookup_key: str | None) -> str:
+        """Convierte un lookup_key de Stripe en nombre de plan interno."""
+        if not lookup_key:
+            return "trial"
+        mapping = {
+            "starter_monthly": "starter",
+            "pro_monthly": "professional",
+            "enterprise_monthly": "enterprise",
+        }
+        return mapping.get(lookup_key, "trial")
+
+    def on_checkout_completed(self, event: WebhookEvent, db: AsyncSession) -> None:
+        """Vincula customer + suscripción al usuario."""
+        import asyncio
+        asyncio.create_task(self._handle_checkout(event, db))
+
+    async def _handle_checkout(self, event: WebhookEvent, db: AsyncSession) -> None:
+        if not event.user_id:
+            return
+
+        result = await db.execute(
+            select(Usuario).where(Usuario.firebase_uid == event.user_id)
+        )
+        usuario = result.scalar_one_or_none()
+        if not usuario:
+            return
+
+        usuario.stripe_customer_id = event.customer_id
+        usuario.subscription_id = event.subscription_id
+        usuario.subscription_status = event.subscription_status
+        usuario.plan_suscripcion = self._lookup_key_to_plan(event.lookup_key)
+
+        if event.current_period_end:
+            usuario.current_period_end = event.current_period_end
+
+        await db.commit()
+
+    def on_subscription_updated(self, event: WebhookEvent, db: AsyncSession) -> None:
+        """Sincroniza cambios de plan y estado."""
+        import asyncio
+        asyncio.create_task(self._handle_subscription_update(event, db))
+
+    async def _handle_subscription_update(
+        self, event: WebhookEvent, db: AsyncSession
+    ) -> None:
+        if not event.customer_id:
+            return
+
+        result = await db.execute(
+            select(Usuario).where(Usuario.stripe_customer_id == event.customer_id)
+        )
+        usuario = result.scalar_one_or_none()
+        if not usuario:
+            return
+
+        usuario.subscription_id = event.subscription_id
+        usuario.subscription_status = event.subscription_status
+        usuario.plan_suscripcion = self._lookup_key_to_plan(event.lookup_key)
+
+        if event.current_period_end:
+            usuario.current_period_end = event.current_period_end
+
+        await db.commit()
+
+    def on_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
+        """Revierte a trial cuando se cancela la suscripción."""
+        import asyncio
+        asyncio.create_task(self._handle_subscription_deleted(event, db))
+
+    async def _handle_subscription_deleted(
+        self, event: WebhookEvent, db: AsyncSession
+    ) -> None:
+        if not event.customer_id:
+            return
+
+        result = await db.execute(
+            select(Usuario).where(Usuario.stripe_customer_id == event.customer_id)
+        )
+        usuario = result.scalar_one_or_none()
+        if not usuario:
+            return
+
+        usuario.plan_suscripcion = "trial"
+        usuario.subscription_status = "canceled"
+        usuario.subscription_id = None
+
+        await db.commit()
+
+
 @router.post("/stripe")
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    """Maneja eventos de Stripe: checkout completado, actualizaciones de suscripción."""
-
+    """Maneja eventos de Stripe usando el procesador compartido."""
     if not settings.stripe_webhook_secret:
         raise HTTPException(status_code=503, detail="Stripe webhook no configurado")
+
+    configure(settings.stripe_secret_key)
 
     body = await request.body()
     sig_header = request.headers.get("stripe-signature")
@@ -28,124 +129,15 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Firma Stripe requerida")
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload=body,
+        event = process_webhook(
+            body=body,
             sig_header=sig_header,
-            secret=settings.stripe_webhook_secret,
+            webhook_secret=settings.stripe_webhook_secret,
+            callbacks=Script9Callbacks(),
+            db=db,
         )
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Body inválido")
-    except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Firma inválida")
-
-    event_type = event["type"]
-    data = event["data"]["object"]
-
-    if event_type == "checkout.session.completed":
-        await _handle_checkout_completed(data, db)
-    elif event_type == "customer.subscription.updated":
-        await _handle_subscription_updated(data, db)
-    elif event_type == "customer.subscription.deleted":
-        await _handle_subscription_deleted(data, db)
-
-    return {"received": True}
-
-
-async def _handle_checkout_completed(session: dict, db: AsyncSession) -> None:
-    """Vincula el customer de Stripe al usuario y asigna suscripción inicial."""
-    customer_id = session.get("customer")
-    client_ref = session.get("client_reference_id")
-    subscription_id = session.get("subscription")
-
-    if not client_ref and not customer_id:
-        return
-
-    query = select(Usuario)
-    if client_ref:
-        query = query.where(Usuario.firebase_uid == client_ref)
-    else:
-        query = query.where(Usuario.stripe_customer_id == customer_id)
-
-    result = await db.execute(query)
-    usuario = result.scalar_one_or_none()
-
-    if not usuario:
-        return
-
-    usuario.stripe_customer_id = customer_id
-
-    if subscription_id:
-        ensure_stripe()
-        subscription = stripe.Subscription.retrieve(subscription_id)
-        if subscription.get("items") and subscription["items"].get("data"):
-            price_id = subscription["items"]["data"][0]["price"]["id"]
-            usuario.subscription_id = subscription_id
-            usuario.subscription_status = subscription.get("status")
-            usuario.current_period_end = datetime.fromtimestamp(
-                subscription.get("current_period_end"),
-                tz=timezone.utc,
-            )
-            plan_map = {
-                settings.starter_price_id: "starter",
-                settings.professional_price_id: "professional",
-                settings.enterprise_price_id: "enterprise",
-            }
-            usuario.plan_suscripcion = plan_map.get(price_id, "trial")
-
-    await db.commit()
-
-
-async def _handle_subscription_updated(subscription: dict, db: AsyncSession) -> None:
-    """Sincroniza cambios de plan y estado de suscripción."""
-    customer_id = subscription.get("customer")
-    if not customer_id:
-        return
-
-    result = await db.execute(
-        select(Usuario).where(Usuario.stripe_customer_id == customer_id)
-    )
-    usuario = result.scalar_one_or_none()
-
-    if not usuario:
-        return
-
-    usuario.subscription_id = subscription.get("id")
-    usuario.subscription_status = subscription.get("status")
-
-    if subscription.get("current_period_end"):
-        usuario.current_period_end = datetime.fromtimestamp(
-            subscription["current_period_end"],
-            tz=timezone.utc,
-        )
-
-    if subscription.get("items") and subscription["items"].get("data"):
-        price_id = subscription["items"]["data"][0]["price"]["id"]
-        plan_map = {
-            settings.starter_price_id: "starter",
-            settings.professional_price_id: "professional",
-            settings.enterprise_price_id: "enterprise",
-        }
-        usuario.plan_suscripcion = plan_map.get(price_id, "trial")
-
-    await db.commit()
-
-
-async def _handle_subscription_deleted(subscription: dict, db: AsyncSession) -> None:
-    """Revierte a trial cuando se cancela la suscripción."""
-    customer_id = subscription.get("customer")
-    if not customer_id:
-        return
-
-    result = await db.execute(
-        select(Usuario).where(Usuario.stripe_customer_id == customer_id)
-    )
-    usuario = result.scalar_one_or_none()
-
-    if not usuario:
-        return
-
-    usuario.plan_suscripcion = "trial"
-    usuario.subscription_status = "canceled"
-    usuario.subscription_id = None
-
-    await db.commit()
+        return {"received": True, "type": event.type}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error de webhook: {e}")

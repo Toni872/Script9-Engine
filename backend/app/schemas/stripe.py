@@ -1,15 +1,8 @@
-"""Schemas Pydantic para endpoints de Stripe."""
+"""Schemas Pydantic para endpoints de Stripe.
 
-from pydantic import BaseModel
+Re-exportados desde script9-billing para mantener compatibilidad.
+"""
 
+from script9_billing.models import CheckoutRequest, CheckoutResult, PortalResult
 
-class CheckoutRequest(BaseModel):
-    price_id: str
-
-
-class CheckoutResponse(BaseModel):
-    url: str
-
-
-class PortalResponse(BaseModel):
-    url: str
+__all__ = ["CheckoutRequest", "CheckoutResult", "PortalResult"]
