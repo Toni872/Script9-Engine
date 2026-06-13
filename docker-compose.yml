@@ -45,7 +45,7 @@ services:
     networks:
       - script9-net
     ports:
-      - '8081:8081'
+      - '8082:8081'
     depends_on:
       db:
         condition: service_healthy
@@ -76,7 +76,7 @@ services:
     networks:
       - script9-net
     ports:
-      - '80:80'
+      - '5174:80'
     depends_on:
       - api
 
