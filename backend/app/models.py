@@ -23,7 +23,9 @@ class Usuario(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     subscription_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    current_period_end: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    current_period_end: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     creado_en: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     actualizado_en: Mapped[datetime.datetime] = mapped_column(

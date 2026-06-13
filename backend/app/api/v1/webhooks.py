@@ -3,18 +3,17 @@
 Usa script9-billing como procesador compartido de webhooks.
 """
 
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from script9_billing.core import configure
+from script9_billing.models import WebhookEvent
+from script9_billing.webhook import process_webhook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
 from app.models import Usuario
-from script9_billing.core import configure
-from script9_billing.models import WebhookEvent
-from script9_billing.webhook import process_webhook
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -39,15 +38,14 @@ class Script9Callbacks:
     def on_checkout_completed(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Vincula customer + suscripción al usuario."""
         import asyncio
+
         asyncio.create_task(self._handle_checkout(event, db))
 
     async def _handle_checkout(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.user_id:
             return
 
-        result = await db.execute(
-            select(Usuario).where(Usuario.firebase_uid == event.user_id)
-        )
+        result = await db.execute(select(Usuario).where(Usuario.firebase_uid == event.user_id))
         usuario = result.scalar_one_or_none()
         if not usuario:
             return
@@ -65,11 +63,10 @@ class Script9Callbacks:
     def on_subscription_updated(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Sincroniza cambios de plan y estado."""
         import asyncio
+
         asyncio.create_task(self._handle_subscription_update(event, db))
 
-    async def _handle_subscription_update(
-        self, event: WebhookEvent, db: AsyncSession
-    ) -> None:
+    async def _handle_subscription_update(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.customer_id:
             return
 
@@ -92,11 +89,10 @@ class Script9Callbacks:
     def on_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Revierte a trial cuando se cancela la suscripción."""
         import asyncio
+
         asyncio.create_task(self._handle_subscription_deleted(event, db))
 
-    async def _handle_subscription_deleted(
-        self, event: WebhookEvent, db: AsyncSession
-    ) -> None:
+    async def _handle_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.customer_id:
             return
 
@@ -114,8 +110,10 @@ class Script9Callbacks:
         await db.commit()
 
 
+from typing import Any
+
 @router.post("/stripe")
-async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Maneja eventos de Stripe usando el procesador compartido."""
     if not settings.stripe_webhook_secret:
         raise HTTPException(status_code=503, detail="Stripe webhook no configurado")
@@ -138,6 +136,6 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         )
         return {"received": True, "type": event.type}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error de webhook: {e}")
+        raise HTTPException(status_code=400, detail=f"Error de webhook: {e}") from e

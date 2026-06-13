@@ -4,6 +4,7 @@ Usa script9-billing como engine de facturación compartido.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from script9_billing.core import configure, create_checkout_session, create_portal_session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
@@ -11,7 +12,6 @@ from app.config import settings
 from app.database import get_db
 from app.models import Usuario
 from app.schemas.stripe import CheckoutRequest, CheckoutResult, PortalResult
-from script9_billing.core import configure, create_checkout_session, create_portal_session
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
@@ -21,7 +21,7 @@ async def checkout(
     req: CheckoutRequest,
     usuario: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> CheckoutResult:
     """Crea una Checkout Session de Stripe usando lookup_key (no price_id)."""
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Stripe no configurado")
@@ -44,15 +44,15 @@ async def checkout(
 
         return CheckoutResult(url=url)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}")
+        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}") from e
 
 
 @router.post("/portal", response_model=PortalResult)
 async def portal(
     usuario: Usuario = Depends(get_current_user),
-):
+) -> PortalResult:
     """Crea una sesión del Customer Portal de Stripe."""
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Stripe no configurado")
@@ -71,4 +71,4 @@ async def portal(
         )
         return PortalResult(url=url)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}")
+        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}") from e

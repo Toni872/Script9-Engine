@@ -1,6 +1,5 @@
 """Script9 Engine — FastAPI application entry point."""
 
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -13,8 +12,10 @@ from app.database import engine
 from app.models import Base
 
 
+from collections.abc import AsyncGenerator
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Intenta crear tablas al iniciar. No falla si la DB no está disponible."""
     try:
         async with engine.begin() as conn:
@@ -37,8 +38,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Vite dev server
-        "http://localhost",        # Docker nginx
-        "http://localhost:80",     # Docker nginx (explicit)
+        "http://localhost",  # Docker nginx
+        "http://localhost:80",  # Docker nginx (explicit)
         "https://script9-engine.web.app",
         "https://script9-engine.firebaseapp.com",
     ],

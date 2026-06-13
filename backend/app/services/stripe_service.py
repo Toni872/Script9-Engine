@@ -4,16 +4,15 @@ DELEGADO a script9-billing. Este archivo existe solo para
 mantener compatibilidad con importaciones existentes.
 """
 
-from script9_billing.core import configure, create_checkout_session
+from script9_billing.core import create_checkout_session
 from script9_billing.core import create_customer_portal_session as create_portal_session
-from script9_billing.core import create_portal_session
 
 # Conveniencia: re-exportar configure para inicialización lazy
 __all__ = [
     "ensure_stripe",
     "create_checkout_session",
     "create_portal_session",
-    "get_or_create_stripe_customer",
+
 ]
 
 
