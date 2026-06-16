@@ -1,6 +1,6 @@
 """Firebase JWT verification y dependencia get_current_user."""
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials, initialize_app
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import Usuario
+from app.services.rate_limit import limiter
 
 security = HTTPBearer(auto_error=False)
 

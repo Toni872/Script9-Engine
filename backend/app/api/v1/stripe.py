@@ -3,7 +3,7 @@
 Usa script9-billing como engine de facturación compartido.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from script9_billing.core import configure, create_checkout_session, create_portal_session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,12 +12,15 @@ from app.config import settings
 from app.database import get_db
 from app.models import Usuario
 from app.schemas.stripe import CheckoutRequest, CheckoutResult, PortalResult
+from app.services.rate_limit import limiter
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
 
 @router.post("/checkout", response_model=CheckoutResult)
+@limiter.limit("10/minute")
 async def checkout(
+    request: Request,
     req: CheckoutRequest,
     usuario: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

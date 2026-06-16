@@ -35,11 +35,9 @@ class Script9Callbacks:
         }
         return mapping.get(lookup_key, "trial")
 
-    def on_checkout_completed(self, event: WebhookEvent, db: AsyncSession) -> None:
+    async def on_checkout_completed(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Vincula customer + suscripción al usuario."""
-        import asyncio
-
-        asyncio.create_task(self._handle_checkout(event, db))
+        await self._handle_checkout(event, db)
 
     async def _handle_checkout(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.user_id:
@@ -60,11 +58,9 @@ class Script9Callbacks:
 
         await db.commit()
 
-    def on_subscription_updated(self, event: WebhookEvent, db: AsyncSession) -> None:
+    async def on_subscription_updated(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Sincroniza cambios de plan y estado."""
-        import asyncio
-
-        asyncio.create_task(self._handle_subscription_update(event, db))
+        await self._handle_subscription_update(event, db)
 
     async def _handle_subscription_update(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.customer_id:
@@ -86,11 +82,9 @@ class Script9Callbacks:
 
         await db.commit()
 
-    def on_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
+    async def on_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Revierte a trial cuando se cancela la suscripción."""
-        import asyncio
-
-        asyncio.create_task(self._handle_subscription_deleted(event, db))
+        await self._handle_subscription_deleted(event, db)
 
     async def _handle_subscription_deleted(self, event: WebhookEvent, db: AsyncSession) -> None:
         if not event.customer_id:
