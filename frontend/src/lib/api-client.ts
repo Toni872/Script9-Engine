@@ -1,13 +1,16 @@
-import { auth } from '@/lib/firebase';
-import { type z } from 'zod';
-import type { ActualizarPerfil } from './zod-schemas';
-import { UsuarioSchema, ApiErrorSchema, HealthSchema } from './zod-schemas';
+/**
+ * API Client — wraps the Hey-API generated client with Firebase JWT injection.
+ * Preserves the existing API surface (api.getMe(), api.updateMe(), etc.)
+ */
 
-// ── Config ──────────────────────────────────────────────────
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
+import { auth } from '@/lib/firebase';
+import { client, UsuariosService, StripeService, HealthService } from '@/client/client.gen';
+import type { Usuario, UsuarioUpdate, CheckoutRequest, CheckoutResult, HealthResponse } from '@/client/client.gen';
+
+// ── Config ───────────────────────────────────────────────────────────────────
 const DEFAULT_TIMEOUT = 10_000; // 10s
 
-// ── Error personalizado ─────────────────────────────────────
+// ── Error personalizado ─────────────────────────────────────────────────────
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -19,114 +22,55 @@ export class ApiError extends Error {
   }
 }
 
-// ── Cliente base ────────────────────────────────────────────
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  schema?: z.ZodType<T>,
-): Promise<T> {
-  // Obtener token JWT de Firebase
-  const token = await auth.currentUser?.getIdToken(false);
+// ── Wrapper with JWT injection ───────────────────────────────────────────────
+/**
+ * Wraps the Hey-API client methods with Firebase JWT auth injection.
+ * The underlying client uses fetch, so we intercept to add the Authorization header.
+ */
+const createAuthProxy = <T extends object>(service: T): T => {
+  return new Proxy(service, {
+    get(target, prop) {
+      const original = (target as any)[prop];
+      if (typeof original !== 'function') return original;
 
-  const headers: HeadersInit = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.body instanceof FormData
-      ? {}
-      : { 'Content-Type': 'application/json' }),
-    ...options.headers,
-  };
+      return async (...args: any[]) => {
+        const token = await auth.currentUser?.getIdToken(false);
+        if (token) {
+          client.setConfig?.({
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+        return original.apply(target, args);
+      };
+    },
+  });
+};
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+const usuariosService = createAuthProxy(UsuariosService);
+const stripeService = createAuthProxy(StripeService);
+const healthService = createAuthProxy(HealthService);
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      let detail = `HTTP ${response.status}`;
-      try {
-        const body = await response.json();
-        const parsed = ApiErrorSchema.safeParse(body);
-        if (parsed.success) detail = parsed.data.detail;
-      } catch { /* ignore parse errors */ }
-      throw new ApiError(
-        `Error en la petición: ${response.status}`,
-        response.status,
-        detail,
-      );
-    }
-
-    // 204 No Content
-    if (response.status === 204) return undefined as T;
-
-    const data = await response.json();
-
-    if (schema) {
-      const parsed = schema.safeParse(data);
-      if (!parsed.success) {
-        console.error('[API] Zod validation error:', parsed.error.issues);
-        throw new ApiError('Error de validación de datos', 500);
-      }
-      return parsed.data;
-    }
-
-    return data as T;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-// ── Métodos helpers ─────────────────────────────────────────
-function get<T>(path: string, schema?: z.ZodType<T>) {
-  return request<T>(path, { method: 'GET' }, schema);
-}
-
-function post<T>(path: string, body?: unknown, schema?: z.ZodType<T>) {
-  return request<T>(
-    path,
-    { method: 'POST', body: body ? JSON.stringify(body) : undefined },
-    schema,
-  );
-}
-
-function patch<T>(path: string, body?: unknown, schema?: z.ZodType<T>) {
-  return request<T>(
-    path,
-    { method: 'PATCH', body: body ? JSON.stringify(body) : undefined },
-    schema,
-  );
-}
-
-function del<T = void>(path: string) {
-  return request<T>(path, { method: 'DELETE' });
-}
-
-// ── API pública ─────────────────────────────────────────────
+// ── API pública ──────────────────────────────────────────────────────────────
 export const api = {
   // Health
-  health: () => get('/health', HealthSchema),
+  health: () =>
+    healthService.health().then((res) => res as HealthResponse),
 
   // Usuarios
-  getMe: () => get('/usuarios/me', UsuarioSchema),
-  updateMe: (data: ActualizarPerfil) =>
-    patch('/usuarios/me', data, UsuarioSchema),
+  getMe: () =>
+    usuariosService.getMe().then((res) => res as Usuario),
+
+  updateMe: (data: UsuarioUpdate) =>
+    usuariosService.updateMe(data).then((res) => res as Usuario),
 
   // Stripe
   createCheckout: (lookupKey: string) =>
-    post<{ url: string }>('/stripe/checkout', { lookup_key: lookupKey }),
+    stripeService
+      .checkout({ lookup_key: lookupKey })
+      .then((res) => ({ url: (res as CheckoutResult).url })),
 
   createPortal: () =>
-    post<{ url: string }>('/stripe/portal'),
-
-  // Genérico (para futuros endpoints)
-  get,
-  post,
-  patch,
-  delete: del,
+    stripeService.portal().then((res) => ({ url: (res as PortalResult).url })),
 };
 
 export type ApiClient = typeof api;
