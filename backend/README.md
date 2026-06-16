@@ -67,3 +67,25 @@ poetry run python scripts/generate_openapi.py
 | `STRIPE_SECRET_KEY` | Clave secreta de Stripe | No (prod) |
 | `STRIPE_WEBHOOK_SECRET` | Secret para verificar webhooks | No (prod) |
 | `SENTRY_DSN` | DSN de Sentry para error tracking | No |
+
+## Tests
+
+Suite hermética de pytest sobre Python 3.12. No requiere Postgres, Redis,
+Stripe ni acceso a la red — usa SQLite en memoria y mocks de Firebase
+Admin. Stripe y el paquete `script9-billing` se cubren en un PR
+subsiguiente (`step-6b-stripe-testing`).
+
+```bash
+poetry run pytest                       # ejecuta la suite
+poetry run pytest --cov=app             # con reporte de cobertura
+poetry run pytest tests/api/test_auth.py -v   # un archivo específico
+poetry run pytest -k test_health        # por nombre de test
+```
+
+**Target de cobertura**: ≥ 80% de líneas combinadas en los módulos
+`auth.py` + `usuarios.py` + `health.py` + `usuario_service.py` + `models.py`.
+La cobertura es informativa (no se configura `--cov-fail-under`) porque
+Stripe y `script9-billing` quedan fuera de este PR.
+
+`asyncio_mode = "auto"` está activo: no se necesitan decoradores
+`@pytest.mark.asyncio`.
