@@ -1,34 +1,29 @@
 """Script9 Engine — FastAPI application entry point."""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.router import router as v1_router
 from app.api.v1.router import webhook_router
 from app.config import settings
 from app.database import engine
 from app.middleware.request_id import RequestIDMiddleware
-from app.models import Base
 from app.services.logging_service import configure_logging
+from app.services.rate_limit import limiter, rate_limit_exceeded_handler
 
 configure_logging()
 logger = structlog.get_logger()
 
 
-from collections.abc import AsyncGenerator
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Intenta crear tablas al iniciar. No falla si la DB no está disponible."""
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    except Exception as e:
-        print(f"[WARN] No se pudo conectar a la base de datos: {e}")
+    """Lifespan context manager — Alembic handles migrations; no create_all here."""
     yield
     await engine.dispose()
 
@@ -56,6 +51,9 @@ app.add_middleware(
 )
 
 app.add_middleware(RequestIDMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 app.include_router(v1_router)
 app.include_router(webhook_router)
