@@ -110,3 +110,26 @@ export class HealthService {
     return client.get('/health');
   }
 }
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+
+export interface PlanResponse {
+  id: string;
+  lookup_key: string;
+  name: string;
+  price: number | null;
+  currency: string;
+  features: string[];
+  popular: boolean;
+  contact_sales: boolean;
+}
+
+export class PlansService {
+  /**
+   * GET /api/v1/plans
+   * Returns the catalog of available plans from Stripe.
+   */
+  static getPlans(): CancelablePromise<PlanResponse[]> {
+    return client.get('/plans');
+  }
+}

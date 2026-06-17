@@ -4,8 +4,8 @@
  */
 
 import { auth } from '@/lib/firebase';
-import { client, UsuariosService, StripeService, HealthService } from '@/client/client.gen';
-import type { Usuario, UsuarioUpdate, CheckoutRequest, CheckoutResult, HealthResponse } from '@/client/client.gen';
+import { client, UsuariosService, StripeService, HealthService, PlansService } from '@/client/client.gen';
+import type { Usuario, UsuarioUpdate, CheckoutRequest, CheckoutResult, HealthResponse, PlanResponse } from '@/client/client.gen';
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const DEFAULT_TIMEOUT = 10_000; // 10s
@@ -49,6 +49,7 @@ const createAuthProxy = <T extends object>(service: T): T => {
 const usuariosService = createAuthProxy(UsuariosService);
 const stripeService = createAuthProxy(StripeService);
 const healthService = createAuthProxy(HealthService);
+const plansService = createAuthProxy(PlansService);
 
 // ── API pública ──────────────────────────────────────────────────────────────
 export const api = {
@@ -62,6 +63,10 @@ export const api = {
 
   updateMe: (data: UsuarioUpdate) =>
     usuariosService.updateMe(data).then((res) => res as Usuario),
+
+  // Plans
+  getPlans: () =>
+    plansService.getPlans().then((res) => res as PlanResponse[]),
 
   // Stripe
   createCheckout: (lookupKey: string) =>

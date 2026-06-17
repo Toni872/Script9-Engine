@@ -21,19 +21,26 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 class Script9Callbacks:
     """Callbacks de Script9 Engine para eventos de Stripe."""
 
-    def __init__(self) -> None:
-        self._db: AsyncSession | None = None
+    # Fallback cuando Stripe no tiene metadata.plan_name configurado
+    _LOOKUP_KEY_TO_PLAN = {
+        "starter_monthly": "starter",
+        "pro_monthly": "professional",
+        "enterprise_monthly": "enterprise",
+    }
 
-    def _lookup_key_to_plan(self, lookup_key: str | None) -> str:
-        """Convierte un lookup_key de Stripe en nombre de plan interno."""
-        if not lookup_key:
-            return "trial"
-        mapping = {
-            "starter_monthly": "starter",
-            "pro_monthly": "professional",
-            "enterprise_monthly": "enterprise",
-        }
-        return mapping.get(lookup_key, "trial")
+    def _resolve_plan_name(self, event: WebhookEvent) -> str:
+        """Resuelve el nombre del plan interno desde el evento de Stripe.
+
+        Prioridad:
+        1. event.plan_name (viene de Stripe price metadata — lo correcto)
+        2. Fallback por lookup_key (retrocompatibilidad)
+        3. "trial" si no hay nada
+        """
+        if event.plan_name:
+            return event.plan_name
+        if event.lookup_key:
+            return self._LOOKUP_KEY_TO_PLAN.get(event.lookup_key, "trial")
+        return "trial"
 
     async def on_checkout_completed(self, event: WebhookEvent, db: AsyncSession) -> None:
         """Vincula customer + suscripción al usuario."""
@@ -51,7 +58,7 @@ class Script9Callbacks:
         usuario.stripe_customer_id = event.customer_id
         usuario.subscription_id = event.subscription_id
         usuario.subscription_status = event.subscription_status
-        usuario.plan_suscripcion = self._lookup_key_to_plan(event.lookup_key)
+        usuario.plan_suscripcion = self._resolve_plan_name(event)
 
         if event.current_period_end:
             usuario.current_period_end = event.current_period_end
@@ -75,7 +82,7 @@ class Script9Callbacks:
 
         usuario.subscription_id = event.subscription_id
         usuario.subscription_status = event.subscription_status
-        usuario.plan_suscripcion = self._lookup_key_to_plan(event.lookup_key)
+        usuario.plan_suscripcion = self._resolve_plan_name(event)
 
         if event.current_period_end:
             usuario.current_period_end = event.current_period_end

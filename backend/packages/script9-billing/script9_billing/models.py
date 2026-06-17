@@ -84,6 +84,10 @@ class WebhookEvent(BaseModel):
         None,
         description="Lookup key del plan (resuelto desde price_id)",
     )
+    plan_name: Optional[str] = Field(
+        None,
+        description="Nombre interno del plan (ej: starter, professional) leído de Stripe price metadata",
+    )
     current_period_end: Optional[datetime] = Field(
         None,
         description="Fin del período actual de facturación",

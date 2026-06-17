@@ -104,6 +104,7 @@ def _extract_event(event: dict) -> WebhookEvent:
     # Resolver price_id y lookup_key desde los items de la suscripción
     price_id: Optional[str] = None
     lookup_key: Optional[str] = None
+    price_metadata: dict = {}
 
     items = data.get("items", {})
     items_data = items.get("data", [])
@@ -114,10 +115,15 @@ def _extract_event(event: dict) -> WebhookEvent:
             price_data = line_items_data[0].get("price", {})
             price_id = price_data.get("id")
             lookup_key = price_data.get("lookup_key", price_data.get("lookup_key"))
+            price_metadata = price_data.get("metadata", {})
     else:
         price_data = items_data[0].get("price", {})
         price_id = price_data.get("id")
         lookup_key = price_data.get("lookup_key")
+        price_metadata = price_data.get("metadata", {})
+
+    # plan_name vive en la metadata del price de Stripe
+    plan_name: Optional[str] = price_metadata.get("plan_name")
 
     return WebhookEvent(
         type=event_type,
@@ -128,6 +134,7 @@ def _extract_event(event: dict) -> WebhookEvent:
         subscription_status=subscription_status,
         price_id=price_id,
         lookup_key=lookup_key,
+        plan_name=plan_name,
         current_period_end=current_period_end,
         raw=data,
     )
