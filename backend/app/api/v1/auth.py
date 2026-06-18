@@ -41,13 +41,38 @@ async def get_current_user(
 
     try:
         decoded = firebase_auth.verify_id_token(credentials.credentials, check_revoked=True)
-    except Exception:
+    except firebase_auth.InvalidIDTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
+        ) from None
+    except firebase_auth.ExpiredIDTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado",
+        ) from None
+    except firebase_auth.RevokedIDTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token revocado",
+        ) from None
+    except Exception as e:
+        # Error inesperado de Firebase o de red — loguear internamente
+        import structlog
+        logger = structlog.get_logger()
+        logger.error("firebase_verify_error", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado",
         ) from None
 
-    firebase_uid: str = decoded["uid"]
+    firebase_uid: str | None = decoded.get("uid")
+    if not firebase_uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
+        )
+
     email: str = decoded.get("email", "")
     nombre: str = decoded.get("name", "")
 
@@ -57,8 +82,17 @@ async def get_current_user(
     if not usuario:
         usuario = Usuario(firebase_uid=firebase_uid, email=email, nombre=nombre)
         db.add(usuario)
-        await db.commit()
-        await db.refresh(usuario)
+        try:
+            await db.commit()
+            await db.refresh(usuario)
+        except Exception:
+            # Race condition: otro request creó el usuario entre el select y el insert.
+            # Re-consultar en vez de fallar.
+            await db.rollback()
+            result = await db.execute(
+                select(Usuario).where(Usuario.firebase_uid == firebase_uid)
+            )
+            usuario = result.scalar_one()
     elif not usuario.activo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

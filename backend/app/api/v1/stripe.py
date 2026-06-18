@@ -47,9 +47,17 @@ async def checkout(
 
         return CheckoutResult(url=url)
     except ValueError as e:
+        # Precio no encontrado, lookup_key inválido — error del cliente
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}") from e
+        # Loguear el error completo internamente; no exponer detalles de Stripe al cliente
+        import logging
+        import stripe
+        if isinstance(e, stripe.error.StripeError):
+            logging.error("stripe_error", type=type(e).__name__, user_uid=usuario.firebase_uid, detail=str(e))
+        else:
+            logging.error("stripe_unexpected_error", user_uid=usuario.firebase_uid, detail=str(e))
+        raise HTTPException(status_code=502, detail="Error al procesar el pago. Intenta de nuevo.") from e
 
 
 @router.post("/portal", response_model=PortalResult)
@@ -74,4 +82,10 @@ async def portal(
         )
         return PortalResult(url=url)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error de Stripe: {e}") from e
+        import logging
+        import stripe
+        if isinstance(e, stripe.error.StripeError):
+            logging.error("stripe_error", type=type(e).__name__, customer_id=usuario.stripe_customer_id, detail=str(e))
+        else:
+            logging.error("stripe_unexpected_error", customer_id=usuario.stripe_customer_id, detail=str(e))
+        raise HTTPException(status_code=502, detail="Error al abrir el portal de facturación. Intenta de nuevo.") from e

@@ -29,3 +29,20 @@ class Usuario(Base):
     actualizado_en: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class WebhookEvent(Base):
+    """Log de eventos recibidos — para idempotencia de webhooks de Stripe.
+
+    Stripe puede reenviar el mismo evento varias veces (5xx, timeouts).
+    Guardamos el event_id para evitar procesar el mismo evento dos veces.
+    """
+
+    __tablename__ = "webhook_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(100))
+    provider: Mapped[str] = mapped_column(String(50), default="stripe")
+    processed_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
