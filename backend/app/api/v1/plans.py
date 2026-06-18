@@ -10,6 +10,14 @@ router = APIRouter(prefix="/plans", tags=["plans"])
 # Lookup keys de los planes en Stripe
 PLAN_LOOKUP_KEYS = ["starter_monthly", "pro_monthly", "enterprise_monthly"]
 
+# Fallback: infiere el plan_name desde el lookup_key cuando Stripe no tiene metadata.
+# IMPORTANTE: mantener sincronizado con Script9Callbacks._LOOKUP_KEY_TO_PLAN en webhooks.py
+_LOOKUP_KEY_TO_PLAN_NAME = {
+    "starter_monthly": "starter",
+    "pro_monthly": "professional",
+    "enterprise_monthly": "enterprise",
+}
+
 
 class PlanFeature(BaseModel):
     text: str
@@ -47,6 +55,8 @@ def _fetch_stripe_plans() -> list[PlanResponse]:
     plans: list[PlanResponse] = []
 
     for lookup_key in PLAN_LOOKUP_KEYS:
+        import logging
+
         try:
             prices = stripe.Price.list(
                 lookup_keys=[lookup_key],
@@ -54,7 +64,8 @@ def _fetch_stripe_plans() -> list[PlanResponse]:
                 active=True,
                 limit=1,
             )
-        except Exception:
+        except Exception as e:
+            logging.warning(f"Stripe Price.list failed for '{lookup_key}': {e}")
             continue
 
         if not prices.data:
@@ -67,8 +78,8 @@ def _fetch_stripe_plans() -> list[PlanResponse]:
 
         plan_name = metadata.get("plan_name") or product_metadata.get("plan_name")
         if not plan_name:
-            # Fallback: inferir del lookup_key si no está en metadata
-            plan_name = lookup_key.replace("_monthly", "").replace("_", "-")
+            # Fallback: usar el mapping known de lookup_key → plan_name
+            plan_name = _LOOKUP_KEY_TO_PLAN_NAME.get(lookup_key, "trial")
 
         display_name = metadata.get(
             "display_name"

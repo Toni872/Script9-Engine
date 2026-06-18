@@ -1,12 +1,12 @@
 """Request ID middleware that generates a UUID per request and attaches it to logs."""
 
 import uuid
-from typing import TYPE_CHECKING
+from typing import Callable, Awaitable
 
-from fastapi import BaseHTTPMiddleware, Request, Response
-
-if TYPE_CHECKING:
-    pass
+import structlog
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -17,11 +17,11 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     to the response headers.
     """
 
-    async def dispatch(self, request: Request, call_next: type) -> Response:  # type: ignore[type-arg]
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
-
-        import structlog
 
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)

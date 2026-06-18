@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -61,8 +61,13 @@ app.include_router(webhook_router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Return JSON error response with request_id for all unhandled exceptions."""
-    import structlog
+    """Return JSON error response with request_id for unhandled exceptions.
+
+    HTTPException es re-raised para que FastAPI la maneje con su propio
+    handler (devuelve el status_code correcto).
+    """
+    if isinstance(exc, HTTPException):
+        raise exc  # deja que FastAPI maneje HTTPException directamente
 
     request_id = getattr(request.state, "request_id", "unknown")
     logger.error("unhandled_exception", request_id=request_id, exc_info=exc)

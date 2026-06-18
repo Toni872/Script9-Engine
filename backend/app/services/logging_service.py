@@ -1,5 +1,7 @@
 """Centralized structured logging with structlog + optional Sentry."""
 
+import structlog
+
 from app.config import settings
 
 
@@ -36,10 +38,8 @@ def configure_logging() -> None:
     _init_sentry()
 
 
-def _get_renderer() -> structlog.processors.Renderer:
+def _get_renderer():  # type: ignore[no-untyped-def]
     """Return JSON renderer for production, console renderer for development."""
-    import structlog
-
     if settings.environment == "production":
         return structlog.processors.JSONRenderer()
     return structlog.dev.ConsoleRenderer()

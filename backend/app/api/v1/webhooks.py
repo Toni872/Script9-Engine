@@ -140,10 +140,27 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -
             db=db,
         )
     except ValueError as e:
+        # Body inválido — no reintentar
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        # Error de firma o procesamiento — no guardamos en log de eventos
-        raise HTTPException(status_code=400, detail="Evento inválido") from e
+        # Error inesperado (DB, red, etc.) — Stripe reintentará
+        # Loguear internamente para debugging
+        import logging
+        import stripe
+        import structlog
+
+        if isinstance(e, stripe.error.SignatureVerificationError):
+            # Firma inválida — no reintentar, 400
+            raise HTTPException(status_code=400, detail="Firma inválida") from e
+
+        logger = structlog.get_logger()
+        logger.error(
+            "webhook_processing_error",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        # Error de servidor — Stripe reintentará (5xx)
+        raise HTTPException(status_code=500, detail="Error interno del servidor") from e
 
     # ── Idempotencia ────────────────────────────────────────────────────
     stripe_event_id = event.raw.get("id")
