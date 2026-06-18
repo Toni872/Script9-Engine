@@ -23,11 +23,17 @@ async def update_me(
     usuario: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Usuario:
-    """Actualiza el perfil del usuario autenticado."""
+    """Actualiza el perfil del usuario autenticado.
+
+    Actualmente solo permite cambiar nombre. El email no se puede cambiar
+    por aquí porque requiere re-verificación con Firebase (el usuario debe
+    confirmar el nuevo email desde su cuenta de Google.
+    """
     if data.nombre is not None:
         usuario.nombre = data.nombre
-    if data.email is not None:
-        usuario.email = data.email
+    # NOTA: email change requires Firebase re-authentication flow.
+    # No permitir cambio de email sin verificar con Firebase.
+    # future: implementar con get_id_token(force_refresh=True) y verificación.
     await db.commit()
     await db.refresh(usuario)
     return usuario

@@ -1,11 +1,34 @@
 """GET /plans — devuelve el catálogo de planes desde Stripe."""
 
+import json
+import time
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/plans", tags=["plans"])
+
+# ── Cache ───────────────────────────────────────────────────────────────────────
+
+_CACHE_TTL_SECONDS = 300  # 5 minutos
+_cache_key = "script9:plans"
+_redis_client = None
+
+
+def _get_redis():
+    """Lazy Redis client — conecta solo cuando se necesita."""
+    global _redis_client
+    if _redis_client is None:
+        try:
+            import redis
+            from app.config import settings
+
+            _redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+            _redis_client.ping()  # verificar conexión
+        except Exception:
+            _redis_client = None
+    return _redis_client
 
 # Lookup keys de los planes en Stripe
 PLAN_LOOKUP_KEYS = ["starter_monthly", "pro_monthly", "enterprise_monthly"]
@@ -138,23 +161,53 @@ def _fetch_stripe_plans() -> list[PlanResponse]:
     return plans
 
 
+def _get_cached_plans() -> Optional[list[PlanResponse]]:
+    """Intenta leer planes desde Redis cache. Devuelve None si no hay cache."""
+    redis = _get_redis()
+    if redis is None:
+        return None
+    try:
+        cached = redis.get(_cache_key)
+        if cached:
+            data = json.loads(cached)
+            return [PlanResponse(**p) for p in data]
+    except Exception:
+        return None
+
+
+def _set_cached_plans(plans: list[PlanResponse]) -> None:
+    """Guarda planes en Redis cache por _CACHE_TTL_SECONDS."""
+    redis = _get_redis()
+    if redis is None:
+        return
+    try:
+        redis.setex(_cache_key, _CACHE_TTL_SECONDS, json.dumps([p.model_dump() for p in plans]))
+    except Exception:
+        pass
+
+
 @router.get("", response_model=list[PlanResponse])
 async def get_plans() -> list[PlanResponse]:
     """Devuelve todos los planes disponibles.
 
-    Lee de Stripe Products + Prices. Si Stripe no está configurado
-    (sin API key), devuelve un catálogo por defecto con los 3 planes.
+    Lee de Stripe Products + Prices con cache Redis (5 min).
+    Si Stripe no está configurado o falla, devuelve el catálogo por defecto.
     """
     from app.config import settings
 
     if not settings.stripe_secret_key:
-        # Stripe no configurado — devolver catálogo por defecto
         return _default_plans()
 
+    # Intentar cache primero
+    cached = _get_cached_plans()
+    if cached is not None:
+        return cached
+
     try:
-        return _fetch_stripe_plans()
+        plans = _fetch_stripe_plans()
+        _set_cached_plans(plans)
+        return plans
     except Exception as e:
-        # Si Stripe falla, devolver fallback para no romper la UI
         import logging
 
         logging.warning(f"Failed to fetch plans from Stripe: {e}")
