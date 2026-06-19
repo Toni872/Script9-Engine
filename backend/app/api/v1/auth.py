@@ -41,17 +41,17 @@ async def get_current_user(
 
     try:
         decoded = firebase_auth.verify_id_token(credentials.credentials, check_revoked=True)
-    except firebase_auth.InvalidIDTokenError:
+    except firebase_auth.InvalidIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
         ) from None
-    except firebase_auth.ExpiredIDTokenError:
+    except firebase_auth.ExpiredIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expirado",
         ) from None
-    except firebase_auth.RevokedIDTokenError:
+    except firebase_auth.RevokedIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token revocado",
