@@ -104,8 +104,8 @@ async def get_leads_this_week(
     # Sparkline: conteo diario de los últimos 7 días
     sparkline: list[int] = []
     for i in range(7):
-        day_start = (today - datetime.timedelta(days=6 - i)).isoformat()
-        day_end = (today - datetime.timedelta(days=5 - i)).isoformat()
+        day_start = today - datetime.timedelta(days=6 - i)
+        day_end = today - datetime.timedelta(days=5 - i)
 
         # Query con raw SQL para obtener conteo por día
         day_query = text(
