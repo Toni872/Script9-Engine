@@ -1,35 +1,19 @@
 import { useUsuario } from '@/hooks/useUsuario';
 import { useAuth } from '@/hooks/useAuth';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import {
-  User,
-  EnvelopeSimple,
-  CurrencyDollar,
-  GearSix,
-  SignOut,
-} from '@phosphor-icons/react';
-import { useNavigate, Link } from 'react-router-dom';
-
-const planColors: Record<string, string> = {
-  trial: 'bg-slate-700 text-slate-300',
-  starter: 'bg-blue-900/50 text-blue-300',
-  professional: 'bg-emerald-900/50 text-emerald-300',
-  enterprise: 'bg-amber-900/50 text-amber-300',
-};
-
-const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
-  active: { label: 'Activo', className: 'text-emerald-400', dot: 'bg-emerald-500' },
-  past_due: { label: 'Vencido', className: 'text-amber-400', dot: 'bg-amber-500' },
-  canceled: { label: 'Cancelado', className: 'text-red-400', dot: 'bg-red-500' },
-  incomplete: { label: 'Incompleto', className: 'text-amber-400', dot: 'bg-amber-500' },
-  trialing: { label: 'Prueba', className: 'text-blue-400', dot: 'bg-blue-500' },
-  unpaid: { label: 'Impago', className: 'text-red-400', dot: 'bg-red-500' },
-};
+import { MetricCard } from '@/components/ui/MetricCard';
+import { ActivityCard } from '@/components/ui/ActivityCard';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { useLeadsThisWeek } from '@/hooks/useLeadsThisWeek';
+import { useActivityFeed } from '@/hooks/useActivityFeed';
+import { EnvelopeSimple, ChartLine, Share, GearSix, SignOut } from '@phosphor-icons/react';
+import { useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
   const { user, logout } = useAuth();
-  const { data: usuario, isLoading, isError, error } = useUsuario();
+  const { data: usuario } = useUsuario();
+  const { data: leadsMetric, isLoading: metricLoading } = useLeadsThisWeek();
+  const { data: activityFeed, isLoading: feedLoading } = useActivityFeed(7);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -37,31 +21,7 @@ export function Dashboard() {
     navigate('/login');
   };
 
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <div className="h-8 w-64 animate-pulse rounded-lg bg-slate-800" />
-        <div className="h-4 w-48 animate-pulse rounded-lg bg-slate-800" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-800/50" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (isError) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <Card title="Error" className="text-red-400">
-          <p>{error instanceof Error ? error.message : 'Error al cargar perfil'}</p>
-        </Card>
-      </div>
-    );
-  }
+  const shareUrl = `https://script-9.com/l/${usuario?.nombre?.toLowerCase().replace(/\s+/g, '-') || 'tu-slug'}`;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
@@ -76,133 +36,90 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<GearSix size={16} />}
+          <button
             onClick={() => navigate('/settings')}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
           >
+            <GearSix size={16} />
             Ajustes
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<SignOut size={16} />}
+          </button>
+          <button
             onClick={handleLogout}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
           >
+            <SignOut size={16} />
             Salir
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* Profile Card */}
-      <Card title="Perfil" className="max-w-xl">
-        <div className="flex items-center gap-4">
-          {user?.photoURL && (
-            <img
-              src={user.photoURL}
-              alt="Avatar"
-              className="h-14 w-14 rounded-full ring-2 ring-emerald-500/30"
-            />
-          )}
-          <div className="space-y-1">
-            <p className="font-medium text-slate-200">{usuario?.nombre ?? user?.displayName}</p>
-            <p className="flex items-center gap-1.5 text-sm text-slate-400">
-              <EnvelopeSimple size={14} />
-              {usuario?.email ?? user?.email}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-block rounded-full px-3 py-0.5 text-xs font-medium capitalize ${
-                  planColors[usuario?.plan_suscripcion ?? 'trial']
-                }`}
-              >
-                {usuario?.plan_suscripcion ?? 'trial'}
-              </span>
+      {/* Metric Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {metricLoading ? (
+          <>
+            <GlassCard className="h-32 animate-pulse bg-slate-800/30" />
+            <GlassCard className="h-32 animate-pulse bg-slate-800/30" />
+            <GlassCard className="h-32 animate-pulse bg-slate-800/30" />
+          </>
+        ) : (
+          <MetricCard
+            title="Leads esta semana"
+            value={leadsMetric?.value ?? 0}
+            delta_pct={leadsMetric?.delta_pct}
+            sparkline={leadsMetric?.sparkline}
+            icon={<ChartLine size={20} />}
+          />
+        )}
+      </div>
 
-              {usuario?.subscription_status && (
-                <span
-                  className={`flex items-center gap-1 text-xs ${
-                    statusConfig[usuario.subscription_status]?.className ?? 'text-slate-400'
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      statusConfig[usuario.subscription_status]?.dot ?? 'bg-slate-500'
-                    }`}
-                  />
-                  {statusConfig[usuario.subscription_status]?.label ?? usuario.subscription_status}
-                </span>
-              )}
+      {/* Activity Feed */}
+      <section>
+        <SectionHeader
+          title="Actividad reciente"
+          subtitle="Tus últimos 7 días"
+          className="mb-4"
+        />
 
-              {usuario?.current_period_end && usuario?.subscription_status === 'active' && (
-                <span className="text-xs text-slate-500">
-                  · Vence{' '}
-                  {new Date(usuario.current_period_end).toLocaleDateString('es-AR', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              )}
-
-              {(!usuario?.stripe_customer_id || usuario?.plan_suscripcion === 'trial') && (
-                <Link
-                  to="/pricing"
-                  className="text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
-                >
-                  Mejorar plan &rarr;
-                </Link>
-              )}
+        {feedLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <GlassCard key={i} compact className="h-16 animate-pulse bg-slate-800/30" />
+            ))}
+          </div>
+        ) : activityFeed && activityFeed.events.length > 0 ? (
+          <div className="space-y-3">
+            {activityFeed.events.map(event => (
+              <ActivityCard
+                key={event.id}
+                tipo={event.tipo}
+                payload={event.payload}
+                creado_en={event.creado_en}
+              />
+            ))}
+          </div>
+        ) : (
+          <GlassCard className="flex flex-col items-center text-center py-12 gap-4">
+            <EnvelopeSimple size={48} className="text-slate-600" />
+            <div>
+              <p className="text-slate-400 mb-2">Aún no hay actividad.</p>
+              <p className="text-sm text-slate-500">Comparte tu formulario para empezar a capturar leads.</p>
             </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Stats Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card glow className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-            <CurrencyDollar size={24} className="text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Plan actual</p>
-            <p className="text-lg font-semibold capitalize text-slate-100">
-              {usuario?.plan_suscripcion ?? 'Cargando...'}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-            <User size={24} className="text-blue-400" />
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Usuario ID</p>
-            <p className="font-mono text-xs text-slate-500">#{usuario?.id ?? '—'}</p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4 sm:col-span-2 lg:col-span-1">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-700/50">
-            <span className="font-mono text-xs text-slate-400">API</span>
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Estado</p>
-            <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Conexión activa
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      {/* Recent Activity / Placeholder */}
-      <Card title="Actividad reciente" description="Tus últimas acciones en la plataforma">
-        <p className="py-8 text-center text-sm text-slate-500">
-          No hay actividad reciente — próximamente con métricas y fichajes.
-        </p>
-      </Card>
+            <div className="flex flex-col items-center gap-2 mt-2">
+              <p className="text-xs text-slate-500">Tu enlace de formulario:</p>
+              <code className="text-sm font-mono text-emerald-400 bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-800">
+                {shareUrl}
+              </code>
+              <button
+                onClick={() => navigator.clipboard.writeText(shareUrl)}
+                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                <Share size={14} />
+                Copiar enlace
+              </button>
+            </div>
+          </GlassCard>
+        )}
+      </section>
     </div>
   );
 }

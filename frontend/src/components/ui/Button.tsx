@@ -1,86 +1,96 @@
-import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { Spinner } from '@phosphor-icons/react';
+import { type ReactNode } from 'react'
+import { motion, type HTMLMotionProps } from 'framer-motion'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type ButtonSize    = 'sm' | 'md' | 'lg'
 
-// Omit props that conflict with Framer Motion's motion.button types
-interface ButtonProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'
-  > {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-}
+type ButtonProps = {
+  children: ReactNode
+  variant?: ButtonVariant
+  size?: ButtonSize
+  loading?: boolean
+  leftIcon?: ReactNode
+  rightIcon?: ReactNode
+  fullWidth?: boolean
+} & Omit<HTMLMotionProps<'button'>, 'children'>
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary:
-    'bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 shadow-[0_4px_14px_rgba(16,185,129,0.39)] hover:shadow-[0_4px_24px_rgba(16,185,129,0.23)]',
-  secondary:
-    'border border-blue-700 text-blue-400 font-medium hover:bg-blue-950/50',
-  ghost:
-    'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50',
-  danger:
-    'bg-red-600/10 text-red-400 border border-red-800/30 hover:bg-red-600/20',
-};
+  primary: [
+    'bg-emerald-500 text-slate-950 font-semibold',
+    'shadow-script9-glow',
+    'hover:bg-emerald-400 hover:shadow-script9-glow-lg',
+  ].join(' '),
+
+  secondary: [
+    'bg-slate-900 border border-slate-800 text-emerald-400',
+    'hover:border-emerald-500/30 hover:bg-slate-800',
+  ].join(' '),
+
+  ghost: [
+    'bg-transparent text-emerald-400',
+    'hover:bg-emerald-500/10',
+  ].join(' '),
+
+  danger: [
+    'bg-red-500 text-white font-semibold',
+    'hover:bg-red-400',
+  ].join(' '),
+}
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5',
-  md: 'px-5 py-2.5 text-sm rounded-lg gap-2',
-  lg: 'px-8 py-4 text-base rounded-lg gap-2.5',
-};
+  sm: 'h-8  px-3 text-xs gap-1.5 rounded-lg',
+  md: 'h-10 px-5 text-sm gap-2   rounded-xl',
+  lg: 'h-12 px-7 text-base gap-2 rounded-xl',
+}
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = 'primary',
-      size = 'md',
-      isLoading = false,
-      disabled,
-      leftIcon,
-      rightIcon,
-      children,
-      className = '',
-      ...props
-    },
-    ref,
-  ) => {
-    const isDisabled = disabled || isLoading;
+/**
+ * Button — the primary interactive element of Script9 Engine.
+ * Powered by Framer Motion for subtle scale feedback.
+ *
+ * @example
+ * <Button variant="primary" size="lg">Crear agente</Button>
+ * <Button variant="secondary" leftIcon={<PlusIcon />}>Nuevo script</Button>
+ * <Button variant="danger">Eliminar</Button>
+ */
+export function Button({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  leftIcon,
+  rightIcon,
+  fullWidth = false,
+  className = '',
+  disabled,
+  ...rest
+}: ButtonProps) {
+  const isDisabled = disabled || loading
 
-    return (
-      <motion.button
-        ref={ref}
-        whileTap={{ scale: isDisabled ? 1 : 0.97 }}
-        disabled={isDisabled}
-        className={`
-          inline-flex items-center justify-center
-          transition-all duration-200
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${variantStyles[variant]}
-          ${sizeStyles[size]}
-          ${className}
-        `}
-        {...props}
-      >
-        {isLoading ? (
-          <Spinner className="h-4 w-4 animate-spin" />
-        ) : (
-          leftIcon
-        )}
-        {children}
-        {rightIcon && !isLoading && (
-          <span className="transition-transform duration-200 group-hover:translate-x-0.5">
-            {rightIcon}
-          </span>
-        )}
-      </motion.button>
-    );
-  },
-);
+  return (
+    <motion.button
+      whileHover={isDisabled ? undefined : { scale: 1.02 }}
+      whileTap={isDisabled  ? undefined : { scale: 0.98 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+      disabled={isDisabled}
+      className={[
+        'inline-flex items-center justify-center',
+        'font-inter transition-colors duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
+        variantStyles[variant],
+        sizeStyles[size],
+        fullWidth ? 'w-full' : '',
+        className,
+      ].join(' ')}
+      {...rest}
+    >
+      {loading ? (
+        <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : leftIcon}
 
-Button.displayName = 'Button';
+      <span>{children}</span>
+
+      {!loading && rightIcon}
+    </motion.button>
+  )
+}

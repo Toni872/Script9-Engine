@@ -6,7 +6,6 @@
  *   npx @hey-api/openapi-ts -i backend/openapi.json -o frontend/src/client/
  */
 
-import type { CancelablePromise } from '@hey-api/client-fetch';
 import { createClient } from '@hey-api/client-fetch';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -51,68 +50,6 @@ export interface PortalResult {
   url: string;
 }
 
-// ── Client ───────────────────────────────────────────────────────────────────
-
-export const client = createClient({
-  baseUrl: import.meta.env.VITE_API_URL ?? '/api/v1',
-});
-
-// ── API Methods ──────────────────────────────────────────────────────────────
-
-export class UsuariosService {
-  /**
-   * GET /api/v1/usuarios/me
-   * Returns the authenticated user's profile.
-   */
-  static getMe(): CancelablePromise<Usuario> {
-    return client.get('/usuarios/me', {
-      responseSchema: undefined, // types only — Zod validation happens in api-client.ts
-    });
-  }
-
-  /**
-   * PATCH /api/v1/usuarios/me
-   * Updates the authenticated user's profile.
-   */
-  static updateMe(data: UsuarioUpdate): CancelablePromise<Usuario> {
-    return client.patch('/usuarios/me', {
-      body: data,
-    });
-  }
-}
-
-export class StripeService {
-  /**
-   * POST /api/v1/stripe/checkout
-   * Creates a Stripe Checkout session.
-   */
-  static checkout(data: CheckoutRequest): CancelablePromise<CheckoutResult> {
-    return client.post('/stripe/checkout', {
-      body: data,
-    });
-  }
-
-  /**
-   * POST /api/v1/stripe/portal
-   * Creates a Stripe Customer Portal session.
-   */
-  static portal(): CancelablePromise<PortalResult> {
-    return client.post('/stripe/portal');
-  }
-}
-
-export class HealthService {
-  /**
-   * GET /api/v1/health
-   * Health check endpoint.
-   */
-  static health(): CancelablePromise<HealthResponse> {
-    return client.get('/health');
-  }
-}
-
-// ── Plans ─────────────────────────────────────────────────────────────────────
-
 export interface PlanResponse {
   id: string;
   lookup_key: string;
@@ -124,12 +61,44 @@ export interface PlanResponse {
   contact_sales: boolean;
 }
 
+// ── Client ───────────────────────────────────────────────────────────────────
+
+export const client = createClient({
+  baseUrl: import.meta.env.VITE_API_URL ?? '/api/v1',
+});
+
+// ── API Methods ──────────────────────────────────────────────────────────────
+// @hey-api/client-fetch returns { data, error, request, response }.
+// We unwrap .data here so callers get T directly.
+
+export class UsuariosService {
+  static getMe(): Promise<Usuario> {
+    return client.get({ url: '/usuarios/me' }).then((res) => res.data as Usuario);
+  }
+
+  static updateMe(data: UsuarioUpdate): Promise<Usuario> {
+    return client.patch({ url: '/usuarios/me', body: data as Record<string, unknown> }).then((res) => res.data as Usuario);
+  }
+}
+
+export class StripeService {
+  static checkout(data: CheckoutRequest): Promise<CheckoutResult> {
+    return client.post({ url: '/stripe/checkout', body: data as unknown as Record<string, unknown> }).then((res) => res.data as CheckoutResult);
+  }
+
+  static portal(): Promise<PortalResult> {
+    return client.post({ url: '/stripe/portal' }).then((res) => res.data as PortalResult);
+  }
+}
+
+export class HealthService {
+  static health(): Promise<HealthResponse> {
+    return client.get({ url: '/health' }).then((res) => res.data as HealthResponse);
+  }
+}
+
 export class PlansService {
-  /**
-   * GET /api/v1/plans
-   * Returns the catalog of available plans from Stripe.
-   */
-  static getPlans(): CancelablePromise<PlanResponse[]> {
-    return client.get('/plans');
+  static getPlans(): Promise<PlanResponse[]> {
+    return client.get({ url: '/plans' }).then((res) => res.data as PlanResponse[]);
   }
 }

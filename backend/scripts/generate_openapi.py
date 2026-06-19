@@ -1,18 +1,12 @@
-"""Script para exportar el esquema OpenAPI de la aplicación a openapi.json."""
-
+"""Generate OpenAPI schema from FastAPI app."""
 import json
-from pathlib import Path
+import sys
+sys.path.insert(0, "/app")
 
-
-def generate_openapi() -> None:
-    """Genera y guarda el esquema OpenAPI en la raíz del proyecto."""
-    from app.main import app
-
-    schema = app.openapi()
-    output_path = Path(__file__).parent.parent / "openapi.json"
-    output_path.write_text(json.dumps(schema, indent=2, ensure_ascii=False))
-    print(f"✅ openapi.json generado en: {output_path}")
-
+from app.main import app
 
 if __name__ == "__main__":
-    generate_openapi()
+    openapi_schema = app.openapi()
+    with open("openapi.json", "w") as f:
+        json.dump(openapi_schema, f, indent=2)
+    print("openapi.json generated")

@@ -49,7 +49,7 @@ export function Settings() {
 
   const portalMutation = useMutation({
     mutationFn: () => api.createPortal(),
-    onSuccess: (data) => {
+    onSuccess: (data: { url: string }) => {
       window.location.href = data.url;
     },
   });
@@ -122,7 +122,7 @@ export function Settings() {
             <Button
               type="submit"
               variant="primary"
-              isLoading={mutation.isPending}
+              loading={mutation.isPending}
               disabled={mutation.isPending}
             >
               Guardar cambios
@@ -164,7 +164,7 @@ export function Settings() {
                 variant="secondary"
                 size="sm"
                 leftIcon={<CreditCard size={16} />}
-                isLoading={portalMutation.isPending}
+                loading={portalMutation.isPending}
                 disabled={portalMutation.isPending}
                 onClick={() => portalMutation.mutate()}
               >

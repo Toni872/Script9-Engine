@@ -4,30 +4,56 @@ Usa script9-billing como engine de facturación compartido.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from script9_billing.core import configure, create_checkout_session, create_portal_session
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.config import settings
 from app.database import get_db
-from app.models import Usuario
-from app.schemas.stripe import CheckoutRequest, CheckoutResult, PortalResult
+from app.models import Cotizacion, Usuario
+from app.schemas.stripe import PortalResult
 from app.services.rate_limit import limiter
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
+
+
+class CheckoutResult(BaseModel):
+    """Respuesta del endpoint de checkout."""
+    url: str
 
 
 @router.post("/checkout", response_model=CheckoutResult)
 @limiter.limit("10/minute")
 async def checkout(
     request: Request,
-    req: CheckoutRequest,
     usuario: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CheckoutResult:
-    """Crea una Checkout Session de Stripe usando lookup_key (no price_id)."""
+    """
+    Crea una Checkout Session de Stripe usando el stripe_price_id de la Cotizacion del usuario.
+
+    El precio se obtiene de la Cotizacion activa del usuario para su tenant.
+    """
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Stripe no configurado")
+
+    # Obtener cotización del usuario para su app/tenant
+    stmt = (
+        select(Cotizacion)
+        .where(Cotizacion.user_id == usuario.id)
+        .where(Cotizacion.app == usuario.tenant_id)
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    cotizacion = result.scalar_one_or_none()
+
+    if not cotizacion or not cotizacion.stripe_price_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Sin cotización asociada",
+        )
 
     configure(settings.stripe_secret_key)
 
@@ -36,7 +62,7 @@ async def checkout(
 
     try:
         url = create_checkout_session(
-            lookup_key=req.lookup_key,
+            price_id=cotizacion.stripe_price_id,
             user_uid=usuario.firebase_uid,
             user_email=usuario.email,
             app_name="script9",
@@ -47,10 +73,8 @@ async def checkout(
 
         return CheckoutResult(url=url)
     except ValueError as e:
-        # Precio no encontrado, lookup_key inválido — error del cliente
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        # Loguear el error completo internamente; no exponer detalles de Stripe al cliente
         import logging
         import stripe
         if isinstance(e, stripe.error.StripeError):

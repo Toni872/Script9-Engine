@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import { useUsuario } from '@/hooks/useUsuario';
+import type { PlanResponse } from '@/client/client.gen';
 import { Button } from '@/components/ui/Button';
 import { Check, ArrowRight, Star } from '@phosphor-icons/react';
 
@@ -18,7 +19,7 @@ export function Pricing() {
 
   const checkoutMutation = useMutation({
     mutationFn: (lookupKey: string) => api.createCheckout(lookupKey),
-    onSuccess: (data) => {
+    onSuccess: (data: { url: string }) => {
       window.location.href = data.url;
     },
     onError: (err: Error) => {
@@ -51,7 +52,7 @@ export function Pricing() {
         <div className="text-center text-slate-400 py-12">Cargando planes...</div>
       ) : (
         <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
-          {plans.map((plan) => {
+          {plans.map((plan: PlanResponse) => {
             const isCurrentPlan = usuario?.plan_suscripcion === plan.id;
             const isLoading =
               checkoutMutation.isPending &&
@@ -136,7 +137,7 @@ export function Pricing() {
                 ) : (
                   <Button
                     variant={plan.popular ? 'primary' : 'secondary'}
-                    isLoading={isLoading}
+                    loading={isLoading}
                     disabled={isLoading}
                     rightIcon={<ArrowRight size={16} weight="bold" />}
                     onClick={() => {

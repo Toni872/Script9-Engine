@@ -1,0 +1,143 @@
+/* =====================================================
+   Script9 Engine — animations.css
+   Keyframe animations for Tailwind integration
+   ===================================================== */
+
+/* ---- slideUp ---- */
+@keyframes slideUp {
+  0%   { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+/* ---- fadeIn ---- */
+@keyframes fadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ---- spin-cube ---- */
+@keyframes spin-cube {
+  0%   { transform: rotateX(0deg)   rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+/* ---- float-head ---- */
+@keyframes float-head {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-20px); }
+}
+
+/* ---- gradient-shift ---- */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0%   50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ---- pulse-glow ---- */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 40px rgba(16, 185, 129, 0.6),
+      0 0 80px rgba(16, 185, 129, 0.2);
+  }
+}
+
+/* ---- shimmer-slide ---- */
+@keyframes shimmer-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Shimmer overlay helper */
+.shimmer-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+  animation: shimmer-slide 2s infinite;
+}
+
+/* ---- text-gradient-flow ---- */
+@keyframes text-gradient-flow {
+  0%, 100% { background-position: 0%   50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.text-gradient-animated {
+  background: linear-gradient(
+    135deg,
+    #10b981 0%,
+    #34d399 40%,
+    #6ee7b7 60%,
+    #10b981 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-gradient-flow 4s ease infinite;
+}
+
+/* ---- ripple-animation ---- */
+@keyframes ripple-animation {
+  0%   { transform: scale(0); opacity: 1; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  background: rgba(16, 185, 129, 0.3);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+/* ---- Utility animation classes ---- */
+.animate-spin-cube          { animation: spin-cube          20s linear infinite; }
+.animate-float-head         { animation: float-head         6s ease-in-out infinite; }
+.animate-gradient-shift     { animation: gradient-shift     8s ease infinite; }
+.animate-pulse-glow         { animation: pulse-glow         2s ease-in-out infinite; }
+.animate-shimmer-slide      { animation: shimmer-slide      2s infinite; }
+.animate-text-gradient-flow { animation: text-gradient-flow 4s ease infinite; }
+.animate-ripple             { animation: ripple-animation   0.6s ease-out; }
+.animate-slide-up           { animation: slideUp            0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-fade-in            { animation: fadeIn             0.4s ease; }
+
+/* ---- Reduced motion support ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .animate-spin-cube,
+  .animate-float-head,
+  .animate-gradient-shift,
+  .animate-pulse-glow,
+  .animate-shimmer-slide,
+  .animate-text-gradient-flow,
+  .animate-ripple,
+  .animate-slide-up,
+  .animate-fade-in,
+  .shimmer-overlay::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

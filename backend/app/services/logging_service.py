@@ -60,7 +60,7 @@ def logging_level_from_settings(environment: str) -> int:
 def _init_sentry() -> None:
     """Conditionally initialize Sentry when DSN is configured."""
     import sentry_sdk
-    from sentry_sdk.integrations.fastapi import FastAPIIntegration
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.starlette import StarletteIntegration
 
     if not settings.sentry_dsn:
@@ -69,7 +69,7 @@ def _init_sentry() -> None:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         integrations=[
-            FastAPIIntegration(),
+            FastApiIntegration(),
             StarletteIntegration(),
         ],
         environment=settings.environment,

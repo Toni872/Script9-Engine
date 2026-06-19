@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { NavLink } from 'react-router-dom';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -35,6 +36,12 @@ export function Navbar() {
 
         {user && (
           <div className="flex items-center gap-4">
+            <NavLink
+              to="/planes"
+              className="text-sm font-medium text-slate-400 transition-colors hover:text-emerald-400"
+            >
+              Planes
+            </NavLink>
             <div className="hidden items-center gap-3 sm:flex">
               {user.photoURL && (
                 <img

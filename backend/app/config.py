@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
 
+    # HubSpot
+    hubspot_api_key: str = ""
+
     # Frontend URLs
     frontend_url: str = "http://localhost:5173"
     script9_url: str = "https://www.script-9.com"

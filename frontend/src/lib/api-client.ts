@@ -5,10 +5,7 @@
 
 import { auth } from '@/lib/firebase';
 import { client, UsuariosService, StripeService, HealthService, PlansService } from '@/client/client.gen';
-import type { Usuario, UsuarioUpdate, CheckoutRequest, CheckoutResult, HealthResponse, PlanResponse } from '@/client/client.gen';
-
-// ── Config ───────────────────────────────────────────────────────────────────
-const DEFAULT_TIMEOUT = 10_000; // 10s
+import type { UsuarioUpdate } from '@/client/client.gen';
 
 // ── Error personalizado ─────────────────────────────────────────────────────
 export class ApiError extends Error {
@@ -54,28 +51,26 @@ const plansService = createAuthProxy(PlansService);
 // ── API pública ──────────────────────────────────────────────────────────────
 export const api = {
   // Health
-  health: () =>
-    healthService.health().then((res) => res as HealthResponse),
+  health: () => healthService.health(),
 
   // Usuarios
-  getMe: () =>
-    usuariosService.getMe().then((res) => res as Usuario),
-
-  updateMe: (data: UsuarioUpdate) =>
-    usuariosService.updateMe(data).then((res) => res as Usuario),
+  getMe: () => usuariosService.getMe(),
+  updateMe: (data: UsuarioUpdate) => usuariosService.updateMe(data),
 
   // Plans
-  getPlans: () =>
-    plansService.getPlans().then((res) => res as PlanResponse[]),
+  getPlans: () => plansService.getPlans(),
 
   // Stripe
   createCheckout: (lookupKey: string) =>
-    stripeService
-      .checkout({ lookup_key: lookupKey })
-      .then((res) => ({ url: (res as CheckoutResult).url })),
+    stripeService.checkout({ lookup_key: lookupKey }),
 
-  createPortal: () =>
-    stripeService.portal().then((res) => ({ url: (res as PortalResult).url })),
+  createPortal: () => stripeService.portal(),
 };
 
 export type ApiClient = typeof api;
+
+// ── Auth helper for hooks ──────────────────────────────────────────────────
+export async function getAuthHeader(): Promise<string> {
+  const token = await auth.currentUser?.getIdToken(true);
+  return token ? `Bearer ${token}` : '';
+}

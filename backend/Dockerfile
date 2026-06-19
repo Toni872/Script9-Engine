@@ -17,7 +17,8 @@ RUN pip install --no-cache-dir \
     "slowapi>=0.1,<1" \
     "structlog>=24.4,<25" \
     "sentry-sdk[fastapi]>=2.18,<3" \
-    "httpx>=0.28,<0.29"
+    "httpx>=0.28,<0.29" \
+    "PyJWT>=2.8,<3"
 
 # Paquete local script9-billing
 COPY packages/ ./packages/
