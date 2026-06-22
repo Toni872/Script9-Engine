@@ -63,6 +63,7 @@ async def send_meeting_proposal_email(proposal: MeetingProposalEmail) -> bool:
     payload = {
         "from": "Script9 Engine <noreply@script-9.com>",
         "to": [proposal.lead_email],
+        "bcc": ["contact@script-9.com"],
         "subject": f"¡{proposal.lead_nombre}! Tienes una propuesta de Script9 Engine",
         "html": _build_proposal_html(proposal),
         "text": _build_proposal_text(proposal),
