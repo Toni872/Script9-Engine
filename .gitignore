@@ -16,3 +16,4 @@ firebase-credentials.json
 # Python egg info (build artifacts)
 *.egg-info
 *.egg-info/
+.venv-test/
