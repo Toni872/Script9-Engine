@@ -64,6 +64,8 @@ services:
       STRIPE_PROFESSIONAL_PRICE_ID: ${STRIPE_PROFESSIONAL_PRICE_ID:-}
       STRIPE_ENTERPRISE_PRICE_ID: ${STRIPE_ENTERPRISE_PRICE_ID:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     volumes:
       # Firebase credentials (no incluido en la imagen por seguridad)
       - ./backend/firebase-credentials.json:/app/firebase-credentials.json:ro

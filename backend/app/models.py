@@ -56,6 +56,14 @@ class Usuario(Base):
         index=True,
         comment="Discriminador de app/tenant para filtrado multi-tenant",
     )
+    # Slug público para formularios públicos (ej: 'toni-lloret' → /l/toni-lloret)
+    public_slug: Mapped[str | None] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
+        comment="Slug público del formulario de captura de leads",
+    )
     # ─────────────────────────────────────────────────────────────────────────
 
     # Relaciones multi-tenant

@@ -9,6 +9,7 @@ import { Pricing } from '@/pages/Pricing';
 import { Planes } from '@/pages/Planes';
 import { AcceptInvite } from '@/pages/AcceptInvite';
 import { SuccessPayment } from '@/pages/SuccessPayment';
+import { LeadForm } from '@/pages/LeadForm';
 import { NotFound } from '@/pages/NotFound';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/planes" element={<Planes />} />
         <Route path="/aceptar-invitacion" element={<AcceptInvite />} />
         <Route path="/pago-exitoso" element={<SuccessPayment />} />
+        <Route path="/l/:slug" element={<LeadForm />} />
 
         {/* Rutas protegidas con layout */}
         <Route

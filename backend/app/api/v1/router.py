@@ -10,6 +10,7 @@ from app.api.v1 import (
     leads,
     meetings,
     plans,
+    public,
     stripe,
     usuarios,
     webhooks,
@@ -25,6 +26,7 @@ router.include_router(meetings.router)
 router.include_router(activity.router)
 router.include_router(invitations.router)
 router.include_router(cotizaciones.router)
+router.include_router(public.router)
 
 # Webhooks sin prefijo /api/v1 para compatibilidad con Stripe
 webhook_router = APIRouter()

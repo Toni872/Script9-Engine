@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # HubSpot
     hubspot_api_key: str = ""
 
+    # Slack
+    slack_webhook_url: str = ""
+
+    # Email (Resend API)
+    resend_api_key: str = ""
+
     # Frontend URLs
     frontend_url: str = "http://localhost:5173"
     script9_url: str = "https://www.script-9.com"
