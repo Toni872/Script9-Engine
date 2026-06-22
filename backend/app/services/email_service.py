@@ -96,88 +96,142 @@ async def send_meeting_proposal_email(proposal: MeetingProposalEmail) -> bool:
 
 
 def _build_proposal_html(proposal: MeetingProposalEmail) -> str:
-    """Construye el HTML del email de propuesta."""
+    """Construye el HTML del email de propuesta profesional."""
     nombre = proposal.lead_nombre
     empresa = proposal.empresa
     url = proposal.agendador_url
     propuesta = (
         proposal.propuesta_texto
-        or f"Hola {nombre}, gracias por tu interés en Script9 Engine. "
-        "Nos encantaría agendar una llamada para conocerte mejor y mostrarte cómo podemos ayudar a {empresa}."
+        or (
+            f"Hola, {nombre}. Gracias por tu interés en Script9 Engine. "
+            f"Nos encantaría agendar una llamada para conocerte mejor y mostrarte "
+            f"cómo podemos ayudar a <strong>{empresa}</strong>."
+        )
     )
 
-    return f"""
-<!DOCTYPE html>
-<html>
+    year = 2026
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Propuesta Script9 Engine</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table {{ border-collapse: collapse; }}
+    .button {{ padding: 14px 0 !important; }}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin:0;padding:0;background:#0a0a0c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0c;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+<body style="margin:0;padding:0;background-color:#020617;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;color:#e2e8f0;">
 
-          <!-- Header -->
+  <!-- Preview text (hidden) -->
+  <div style="display:none;max-height:0;overflow:hidden;">
+    Automatización IA para equipos comerciales · Script9 Engine
+  </div>
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#020617;">
+    <tr>
+      <td align="center" style="padding:48px 20px;">
+
+        <!-- Main card -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+          <!-- ── Header ── -->
           <tr>
-            <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);border-radius:16px 16px 0 0;padding:40px;text-align:center;">
-              <h1 style="margin:0;font-size:28px;font-weight:800;color:#0a0a0c;font-family:'Space Grotesk',sans-serif;">
-                Script9 Engine
-              </h1>
-              <p style="margin:8px 0 0;color:#0a0a0c;opacity:0.8;font-size:14px;">
+            <td style="background-color:#0f172a;border-radius:20px 20px 0 0;padding:48px 48px 40px;text-align:center;">
+              <!-- Logo wordmark -->
+              <div style="margin-bottom:12px;">
+                <span style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+                  Script9
+                </span>
+                <span style="font-size:26px;font-weight:300;color:#10b981;letter-spacing:-0.5px;">
+                  Engine
+                </span>
+              </div>
+              <!-- Tagline -->
+              <p style="margin:0;font-size:13px;font-weight:500;color:#10b981;letter-spacing:2px;text-transform:uppercase;opacity:0.9;">
                 Automatización IA para equipos comerciales
               </p>
             </td>
           </tr>
 
-          <!-- Body -->
+          <!-- ── Body ── -->
           <tr>
-            <td style="background:#111827;border-radius:0 0 16px 16px;padding:40px;">
+            <td style="background-color:#0f172a;padding:0 48px 48px;">
 
-              <p style="margin:0 0 24px;font-size:18px;font-weight:600;color:#f1f5f9;">
-                Hola {nombre},
+              <!-- Divider -->
+              <div style="height:1px;background:linear-gradient(to right,transparent,#1e293b,transparent);margin-bottom:40px;"></div>
+
+              <!-- Greeting -->
+              <p style="margin:0 0 28px;font-size:22px;font-weight:600;color:#f8fafc;line-height:1.3;">
+                Buenos días, {nombre}.
               </p>
 
-              <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#94a3b8;">
-                {propuesta.replace(empresa, f"<strong>{empresa}</strong>")}
+              <!-- Proposal text -->
+              <p style="margin:0 0 36px;font-size:15px;line-height:1.8;color:#94a3b8;">
+                {propuesta}
               </p>
 
-              <!-- CTA Button -->
-              <div style="text-align:center;margin:32px 0;">
-                <a href="{url}"
-                   style="display:inline-block;background:#10b981;color:#0a0a0c;font-weight:700;font-size:16px;
-                          padding:16px 40px;border-radius:12px;text-decoration:none;">
-                  Agendar mi llamada →
-                </a>
-              </div>
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+                      href="{url}" style="height:52px;v-text-anchor:middle;width:220px;" arcsize="14%" strokecolor="#10b981" fillcolor="#10b981">
+                      <w:anchorlock/>
+                      <center style="color:#020617;font-family:sans-serif;font-size:15px;font-weight:700;">Agendar mi llamada →</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <a href="{url}"
+                       style="display:inline-block;background-color:#10b981;color:#020617;font-size:15px;font-weight:700;
+                              padding:16px 40px;border-radius:10px;text-decoration:none;letter-spacing:0.3px;">
+                      Agendar mi llamada →
+                    </a>
+                    <!--<![endif]-->
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin:0 0 16px;font-size:14px;color:#64748b;text-align:center;">
+              <!-- Expiry note -->
+              <p style="margin:24px 0 0;font-size:12px;color:#475569;text-align:center;">
                 El enlace expira en 7 días.
               </p>
 
-              <hr style="border:none;border-top:1px solid #1e293b;margin:32px 0;" />
+              <!-- Divider -->
+              <div style="height:1px;background:linear-gradient(to right,transparent,#1e293b,transparent);margin:40px 0;"></div>
 
-              <p style="margin:0;font-size:13px;color:#475569;text-align:center;">
+              <!-- Alt contact -->
+              <p style="margin:0;font-size:13px;color:#64748b;text-align:center;line-height:1.6;">
                 ¿No puedes asistir? Responde a este email y buscaremos otro horario que te convenga.
               </p>
+
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- ── Footer ── -->
           <tr>
-            <td style="padding:24px;text-align:center;">
+            <td style="background-color:#0f172a;border-radius:0 0 20px 20px;padding:28px 48px;text-align:center;">
               <p style="margin:0;font-size:12px;color:#334155;">
-                © 2025 Script9 Engine · <a href="https://www.script-9.com" style="color:#10b981;">script-9.com</a>
+                © {year} Script9 Engine ·
+                <a href="https://www.script-9.com" style="color:#10b981;text-decoration:none;">script-9.com</a>
               </p>
             </td>
           </tr>
 
         </table>
+        <!-- /Main card -->
+
       </td>
     </tr>
   </table>
+  <!-- /Wrapper -->
+
 </body>
 </html>
 """
@@ -188,11 +242,14 @@ def _build_proposal_text(proposal: MeetingProposalEmail) -> str:
     url = proposal.agendador_url
     propuesta = (
         proposal.propuesta_texto
-        or f"Hola {proposal.lead_nombre}, gracias por tu interés en Script9 Engine. "
-        f"Nos encantaría agendar una llamada para conocerte mejor y mostrarte cómo podemos ayudar a {proposal.empresa}."
+        or (
+            f"Hola, {proposal.lead_nombre}. Gracias por tu interés en Script9 Engine. "
+            f"Nos encantaría agendar una llamada para conocerte mejor y mostrarte "
+            f"cómo podemos ayudar a {proposal.empresa}."
+        )
     )
-    return f"""
-Script9 Engine — Propuesta para {proposal.lead_nombre}
+    year = 2026
+    return f"""Buenos días, {proposal.lead_nombre}.
 
 {propuesta}
 
@@ -200,7 +257,7 @@ Script9 Engine — Propuesta para {proposal.lead_nombre}
 
 El enlace expira en 7 días.
 
-¿No puedes asistir? Responde a este email y buscaremos otro horario.
+¿No puedes asistir? Responde a este email y buscaremos otro horario que te convenga.
 
-© 2025 Script9 Engine · script-9.com
+© {year} Script9 Engine · script-9.com
 """
